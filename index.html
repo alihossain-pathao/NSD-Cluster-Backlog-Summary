@@ -1,0 +1,1050 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Narsingdi Cluster Backlog Dashboard</title>
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-dark: #3730a3;
+            --bg: #f8fafc;
+            --surface: #ffffff;
+            --border: #e2e8f0;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+        }
+
+        * {
+            box-sizing: border-box;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg);
+            padding: 24px 16px;
+            color: var(--text-main);
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* Header Card */
+        .top-card {
+            background: var(--surface);
+            padding: 24px 32px;
+            border-radius: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.03);
+            border: 1px solid var(--border);
+        }
+
+        .header-title h1 {
+            font-size: 26px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            background: linear-gradient(135deg, #0f172a 0%, #475569 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .ratio-box {
+            background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%);
+            padding: 12px 32px;
+            border-radius: 16px;
+            text-align: center;
+            color: white;
+            box-shadow: 0 8px 20px -4px rgba(79, 70, 229, 0.35);
+        }
+
+        .ratio-box span {
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            opacity: 0.85;
+            display: block;
+            text-transform: uppercase;
+        }
+
+        .ratio-box h2 {
+            font-size: 32px;
+            font-weight: 800;
+            margin-top: 2px;
+        }
+
+        /* Input Card Area */
+        .input-card {
+            background: var(--surface);
+            padding: 20px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.02);
+            border: 1px solid var(--border);
+        }
+
+        textarea {
+            width: 100%;
+            height: 120px;
+            padding: 14px;
+            border: 1.5px solid var(--border);
+            border-radius: 14px;
+            font-family: 'Consolas', monospace;
+            font-size: 13px;
+            background-color: #f8fafc;
+            resize: vertical;
+            outline: none;
+            transition: all 0.2s ease;
+        }
+
+        textarea:focus {
+            border-color: var(--primary);
+            background-color: var(--surface);
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+        }
+
+        .controls-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 14px;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: #f1f5f9;
+            color: #475569;
+            border: 1px solid var(--border);
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s ease;
+        }
+
+        .btn-secondary:hover { background: #e2e8f0; }
+
+        .btn-success {
+            background: #10b981;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
+        }
+
+        .btn-success:hover {
+            background: #059669;
+            transform: translateY(-1px);
+        }
+
+        .search-box {
+            position: relative;
+            min-width: 320px;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1.5px solid var(--border);
+            border-radius: 10px;
+            font-size: 13px;
+            outline: none;
+            transition: all 0.2s;
+            background: #f8fafc;
+        }
+
+        .search-box input:focus {
+            border-color: var(--primary);
+            background: white;
+        }
+
+        /* Hub Summary Grid Cards */
+        .hub-summary-card {
+            background: var(--surface);
+            border-radius: 20px;
+            padding: 24px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.02);
+            border: 1px solid var(--border);
+            display: none;
+        }
+
+        .hub-summary-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 18px;
+        }
+
+        .hub-summary-header h3 {
+            font-size: 17px;
+            color: var(--text-main);
+            font-weight: 700;
+        }
+
+        .hub-summary-content {
+            display: flex;
+            gap: 20px;
+            align-items: stretch;
+            flex-wrap: wrap;
+        }
+
+        .hub-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 14px;
+            flex: 1;
+            min-width: 260px;
+        }
+
+        .hub-card-item {
+            background: #f8fafc;
+            border: 1px solid var(--border);
+            padding: 16px 18px;
+            border-radius: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            transition: all 0.2s ease;
+        }
+
+        .hub-card-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px -4px rgba(0, 0, 0, 0.04);
+            background: white;
+            border-color: #cbd5e1;
+        }
+
+        .hub-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .hub-name {
+            font-weight: 700;
+            color: var(--text-main);
+            font-size: 14px;
+        }
+
+        .hub-badge {
+            background: #e0e7ff;
+            color: #3730a3;
+            font-weight: 800;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+        }
+
+        /* Status Breakdown Inside Hub Card */
+        .hub-status-breakdown {
+            display: flex;
+            gap: 8px;
+            margin-top: 4px;
+        }
+
+        .status-chip {
+            flex: 1;
+            padding: 6px 8px;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 700;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .status-chip.hold {
+            background: #fffbeb;
+            color: #b45309;
+            border: 1px solid #fde68a;
+        }
+
+        .status-chip.received {
+            background: #f0fdf4;
+            color: #047857;
+            border: 1px solid #bbf7d0;
+        }
+
+        .progress-bar-bg {
+            background: #e2e8f0;
+            height: 6px;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            background: linear-gradient(90deg, #6366f1, #a855f7);
+            height: 100%;
+            border-radius: 10px;
+            transition: width 0.4s ease;
+        }
+
+        .hub-percent {
+            font-size: 11px;
+            color: var(--text-muted);
+            text-align: right;
+            font-weight: 600;
+        }
+
+        /* Status Stats Section */
+        .not-assigned-container {
+            display: none;
+            gap: 14px;
+            flex: 2;
+            min-width: 300px;
+        }
+
+        .not-assigned-box {
+            border-radius: 14px;
+            padding: 14px 18px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .not-assigned-box.hold {
+            background: #fffbebf5;
+            border: 1px dashed #fde68a;
+        }
+
+        .not-assigned-box.received {
+            background: #f0fdf4;
+            border: 1px dashed #bbf7d0;
+        }
+
+        .na-title {
+            font-size: 12px;
+            font-weight: 700;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .not-assigned-box.hold .na-title { color: #b45309; }
+        .not-assigned-box.received .na-title { color: #047857; }
+
+        .na-count {
+            font-size: 26px;
+            font-weight: 800;
+        }
+
+        .not-assigned-box.hold .na-count { color: #d97706; }
+        .not-assigned-box.received .na-count { color: #10b981; }
+
+        /* Pivot Matrix Table Section */
+        .pivot-card {
+            background: var(--surface);
+            border-radius: 20px;
+            padding: 24px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.03);
+            border: 1px solid var(--border);
+            display: none;
+            overflow-x: auto;
+        }
+
+        .pivot-card h3 {
+            font-size: 17px;
+            color: var(--text-main);
+            font-weight: 800;
+            margin-bottom: 18px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .pivot-table-wrapper {
+            border-radius: 14px;
+            border: 1px solid #cbd5e1;
+            overflow: hidden;
+        }
+
+        .pivot-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            text-align: center;
+            background-color: white;
+        }
+
+        .pivot-table th, .pivot-table td {
+            padding: 12px 14px;
+            border-bottom: 1px solid #e2e8f0;
+            border-right: 1px solid #f1f5f9;
+        }
+
+        .pivot-table th {
+            background: #f8fafc;
+            color: #334155;
+            font-weight: 700;
+            border-bottom: 2px solid #cbd5e1;
+        }
+
+        .pivot-table th.row-header, .pivot-table td.row-header {
+            text-align: left;
+            font-weight: 700;
+            color: #1e293b;
+            background-color: #ffffff;
+            min-width: 180px;
+        }
+
+        .pivot-table tr:hover td {
+            background-color: #f1f5f9 !important;
+        }
+
+        .pivot-table .grand-col {
+            font-weight: 800;
+            background-color: #f8fafc;
+            color: #0f172a;
+        }
+
+        .pivot-table tr.grand-total-row {
+            background-color: #edf2f7;
+            font-weight: 800;
+            color: #0f172a;
+            border-top: 2px solid #cbd5e1;
+        }
+
+        .pivot-table tr.grand-total-row td {
+            background-color: #edf2f7 !important;
+            font-size: 14px;
+        }
+
+        .cell-critical {
+            background-color: #fef2f2;
+            color: #991b1b;
+            font-weight: 700;
+        }
+
+        .cell-warning {
+            background-color: #fffbeb;
+            color: #92400e;
+        }
+
+        /* Status Output Cards Grid */
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+            gap: 18px;
+        }
+
+        .status-card {
+            background: var(--surface);
+            border-radius: 20px;
+            padding: 18px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.02);
+            border: 1px solid var(--border);
+            border-top: 5px solid var(--primary);
+            display: flex;
+            flex-direction: column;
+            max-height: 520px;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .card-header h3 {
+            font-size: 14px;
+            color: var(--text-main);
+            font-weight: 700;
+        }
+
+        .card-header-actions {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .copy-card-btn {
+            background: #f1f5f9;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 4px 8px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-main);
+        }
+
+        .copy-card-btn:hover {
+            background: #e2e8f0;
+            transform: scale(1.1);
+        }
+
+        .badge {
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 800;
+        }
+
+        .cid-list {
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding-right: 2px;
+        }
+
+        .cid-list::-webkit-scrollbar { width: 4px; }
+        .cid-list::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+
+        .cid-item {
+            padding: 8px 12px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 600;
+            background: #f8fafc;
+            color: #334155;
+            border: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .cid-item:hover {
+            border-color: var(--primary);
+            background: white;
+            transform: scale(1.01);
+        }
+
+        .cid-item .hub-info {
+            font-size: 10px;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #0f172a;
+            color: white;
+            padding: 10px 18px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 600;
+            display: none;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="top-card">
+        <div class="header-title">
+            <h1>Narsingdi Cluster Backlog Summary</h1>
+        </div>
+        <div class="ratio-box">
+            <span>GRAND TOTAL</span>
+            <h2 id="totalParcelCount">0</h2>
+        </div>
+    </div>
+
+    <div class="input-card">
+        <textarea id="rawInput" placeholder="এখানে Excel / Google Sheet থেকে ডেটা পেস্ট করুন..." oninput="autoProcess()"></textarea>
+        <div class="controls-row">
+            <div class="btn-group">
+                <button class="btn-primary" onclick="processData()">⚡ Process Data</button>
+                <button class="btn-secondary" onclick="clearAll()">Clear All</button>
+                <button class="btn-success" onclick="exportToCSV()">📥 Export CSV</button>
+            </div>
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="🔍 একাধিক ফিল্টার লিখুন (e.g. Shibpur 7+ Hold / Shibpur, 7+)..." onkeyup="filterCards()">
+            </div>
+        </div>
+    </div>
+
+    <div class="hub-summary-card" id="hubSummaryCard">
+        <div class="hub-summary-header">
+            <h3 id="hubSummaryTitle">Hub Wise Backlog Parcel Summary</h3>
+        </div>
+        <div class="hub-summary-content">
+            <div class="hub-grid" id="hubGridContainer"></div>
+            <div class="not-assigned-container" id="notAssignedContainer">
+                <div class="not-assigned-box hold">
+                    <span class="na-title">⚠️ On Hold</span>
+                    <span class="na-count" id="naHoldCount">0</span>
+                </div>
+                <div class="not-assigned-box received">
+                    <span class="na-title">📦 Received at Hub</span>
+                    <span class="na-count" id="naReceivedCount">0</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="pivot-card" id="pivotCard">
+        <h3>📊 Aging Matrix Summary <span style="font-size:13px; font-weight:normal; color:#64748b;">(Count of ConsignmentId by Days)</span></h3>
+        <div class="pivot-table-wrapper" id="pivotTableContainer"></div>
+    </div>
+
+    <div class="grid-container" id="outputGrid"></div>
+</div>
+
+<div class="toast" id="toast">Copied to clipboard!</div>
+
+<script>
+    const colorPalette = [
+        { border: '#10b981', badgeBg: '#d1fae5', badgeColor: '#065f46', itemBg: '#f0fdf4', itemColor: '#047857', itemBorder: '#bbf7d0' },
+        { border: '#f59e0b', badgeBg: '#fef3c7', badgeColor: '#92400e', itemBg: '#fffbeb', itemColor: '#b45309', itemBorder: '#fde68a' },
+        { border: '#f43f5e', badgeBg: '#ffe4e6', badgeColor: '#9f1239', itemBg: '#fff1f2', itemColor: '#be123c', itemBorder: '#fecdd3' },
+        { border: '#8b5cf6', badgeBg: '#ede9fe', badgeColor: '#5b21b6', itemBg: '#f5f3ff', itemColor: '#6d28d9', itemBorder: '#ddd6fe' },
+        { border: '#3b82f6', badgeBg: '#dbeafe', badgeColor: '#1e40af', itemBg: '#eff6ff', itemColor: '#1d4ed8', itemBorder: '#bfdbfe' },
+        { border: '#14b8a6', badgeBg: '#ccfbf1', badgeColor: '#115e59', itemBg: '#f0fdf4', itemColor: '#0f766e', itemBorder: '#99f6e4' }
+    ];
+
+    let globalParsedItems = [];
+    let currentFilteredItems = []; // CSV এক্সপোর্টের জন্য গ্লোবাল ফিল্টার্ড লিস্ট
+
+    function autoProcess() {
+        processData();
+    }
+
+    function processData() {
+        const text = document.getElementById("rawInput").value.trim();
+        if (!text) {
+            clearDisplay();
+            return;
+        }
+
+        const lines = text.split("\n");
+        globalParsedItems = [];
+
+        lines.forEach(line => {
+            if (!line.trim()) return;
+
+            const parts = line.split(/\t+/);
+
+            if (parts.length >= 2) {
+                let cid = parts[0].trim();
+                let status = parts[1].trim();
+                let hub = parts[2] ? parts[2].trim().replace(/\s*-\s*/g, '-') : "(blank)";
+                let age = parts[3] ? parts[3].trim() : "(blank)";
+
+                if (cid.toLowerCase().includes("consignmentid") || status.toLowerCase().includes("status")) {
+                    return;
+                }
+
+                const itemObj = { cid, hub, age, status };
+                globalParsedItems.push(itemObj);
+            }
+        });
+
+        filterCards();
+    }
+
+    function renderHubSummary(filteredItems, isPlusSearch = false) {
+        const hubGridContainer = document.getElementById("hubGridContainer");
+        hubGridContainer.innerHTML = "";
+
+        const hubData = {};
+        const totalCount = filteredItems.length;
+
+        filteredItems.forEach(item => {
+            if (!hubData[item.hub]) {
+                hubData[item.hub] = { total: 0, hold: 0, received: 0 };
+            }
+            
+            hubData[item.hub].total++;
+            
+            const st = item.status.toLowerCase();
+            if (st.includes("hold")) {
+                hubData[item.hub].hold++;
+            } else if (st.includes("received") || st.includes("last mile")) {
+                hubData[item.hub].received++;
+            }
+        });
+
+        const sortedHubs = Object.keys(hubData).sort();
+
+        sortedHubs.forEach(hub => {
+            const data = hubData[hub];
+            const percentage = totalCount > 0 ? Math.round((data.total / totalCount) * 100) : 0;
+
+            const card = document.createElement("div");
+            card.className = "hub-card-item";
+
+            let breakdownHtml = "";
+            if (isPlusSearch) {
+                breakdownHtml = `
+                    <div class="hub-status-breakdown">
+                        <div class="status-chip hold" title="On Hold">
+                            <span>⚠️ Hold</span>
+                            <span>${data.hold}</span>
+                        </div>
+                        <div class="status-chip received" title="Received at Hub">
+                            <span>📦 Received</span>
+                            <span>${data.received}</span>
+                        </div>
+                    </div>
+                `;
+            }
+
+            card.innerHTML = `
+                <div class="hub-card-header">
+                    <span class="hub-name">${hub}</span>
+                    <span class="hub-badge">${data.total}</span>
+                </div>
+                ${breakdownHtml}
+                <div>
+                    <div class="progress-bar-bg">
+                        <div class="progress-bar-fill" style="width: ${percentage}%"></div>
+                    </div>
+                    <div class="hub-percent">${percentage}% of total</div>
+                </div>
+            `;
+            hubGridContainer.appendChild(card);
+        });
+
+        document.getElementById("hubSummaryCard").style.display = totalCount > 0 ? "block" : "none";
+    }
+
+    function renderPivotTable(filteredItems) {
+        const container = document.getElementById("pivotTableContainer");
+        container.innerHTML = "";
+
+        if (filteredItems.length === 0) {
+            document.getElementById("pivotCard").style.display = "none";
+            return;
+        }
+
+        const matrixData = {};
+        const ageSet = new Set();
+        const totalCount = filteredItems.length;
+
+        filteredItems.forEach(item => {
+            if (!matrixData[item.hub]) matrixData[item.hub] = {};
+            matrixData[item.hub][item.age] = (matrixData[item.hub][item.age] || 0) + 1;
+            ageSet.add(item.age);
+        });
+
+        const ages = Array.from(ageSet).sort((a, b) => {
+            if (!isNaN(a) && !isNaN(b)) return Number(a) - Number(b);
+            return a.localeCompare(b);
+        });
+
+        let html = `<table class="pivot-table"><thead><tr><th class="row-header">Row Labels</th>`;
+
+        ages.forEach(age => {
+            html += `<th>${age}</th>`;
+        });
+        html += `<th class="grand-col">Grand Total</th></tr></thead><tbody>`;
+
+        const hubs = Object.keys(matrixData).sort();
+        const ageColumnTotals = {};
+        ages.forEach(age => ageColumnTotals[age] = 0);
+
+        hubs.forEach(hub => {
+            html += `<tr data-hubrow="${hub.toLowerCase()}"><td class="row-header">${hub}</td>`;
+            let rowTotal = 0;
+
+            ages.forEach(age => {
+                const count = matrixData[hub][age] || "";
+                if (count) {
+                    rowTotal += count;
+                    ageColumnTotals[age] += count;
+                }
+
+                let cellClass = "";
+                const ageNum = Number(age);
+                if (count !== "" && !isNaN(ageNum)) {
+                    if (ageNum >= 8) cellClass = "cell-critical";
+                    else if (ageNum >= 6) cellClass = "cell-warning";
+                }
+
+                html += `<td class="${cellClass}">${count}</td>`;
+            });
+
+            html += `<td class="grand-col">${rowTotal}</td></tr>`;
+        });
+
+        html += `<tr class="grand-total-row"><td class="row-header">Grand Total</td>`;
+        ages.forEach(age => {
+            html += `<td>${ageColumnTotals[age] || 0}</td>`;
+        });
+        html += `<td class="grand-col">${totalCount}</td></tr></tbody></table>`;
+
+        container.innerHTML = html;
+        document.getElementById("pivotCard").style.display = "block";
+    }
+
+    function renderGroupedCards(categories, isHubWise = false) {
+        const grid = document.getElementById("outputGrid");
+        grid.innerHTML = "";
+
+        let colorIndex = 0;
+        for (const [title, items] of Object.entries(categories)) {
+            const theme = colorPalette[colorIndex % colorPalette.length];
+
+            items.sort((a, b) => {
+                let ageA = parseFloat(a.age) || 0;
+                let ageB = parseFloat(b.age) || 0;
+                return ageB - ageA;
+            });
+
+            const card = document.createElement("div");
+            card.className = "status-card";
+            card.style.borderTopColor = theme.border;
+
+            let cidsHtml = items.map(item => {
+                const infoText = isHubWise ? `${item.status} (${item.age}d)` : `${item.hub} (${item.age}d)`;
+                return `<div class="cid-item" data-rawcid="${item.cid}" data-rawhub="${item.hub}" data-rawage="${item.age}d" style="background:${theme.itemBg}; color:${theme.itemColor}; border-color:${theme.itemBorder}" onclick="copyText('${item.cid}')" title="Click to copy ID">
+                    <span>${item.cid}</span>
+                    <span class="hub-info">${infoText}</span>
+                </div>`;
+            }).join('');
+
+            card.innerHTML = `
+                <div class="card-header">
+                    <h3>${title}</h3>
+                    <div class="card-header-actions">
+                        <button class="copy-card-btn" onclick="copyCardCids(this, false)" title="Copy CID only">📋</button>
+                        <button class="copy-card-btn" onclick="copyCardCids(this, true)" title="Copy CID with Hub & Days">📅</button>
+                        <span class="badge status-count-badge" style="background:${theme.badgeBg}; color:${theme.badgeColor}">${items.length}</span>
+                    </div>
+                </div>
+                <div class="cid-list">
+                    ${cidsHtml}
+                </div>
+            `;
+
+            grid.appendChild(card);
+            colorIndex++;
+        }
+    }
+
+    // Filter Logic
+    function filterCards() {
+        const rawQuery = document.getElementById("searchInput").value.toLowerCase().trim();
+        let matchingItems = [];
+
+        const tokens = rawQuery ? rawQuery.split(/[\s,]+/).filter(t => t.length > 0) : [];
+        
+        let isPlusSearch = false;
+
+        if (tokens.length === 0) {
+            matchingItems = [...globalParsedItems];
+        } else {
+            matchingItems = globalParsedItems.filter(item => {
+                const cid = item.cid.toLowerCase();
+                const hub = item.hub.toLowerCase();
+                const age = item.age.toLowerCase();
+                const rawAgeNum = parseFloat(item.age) || 0;
+                const status = item.status.toLowerCase();
+
+                return tokens.every(token => {
+                    const plusMatch = token.match(/^(\d+)\+\s*d?$/);
+                    if (plusMatch) {
+                        isPlusSearch = true;
+                        const minAgeThreshold = parseInt(plusMatch[1], 10);
+                        return rawAgeNum >= minAgeThreshold;
+                    }
+
+                    let isHubMatch = false;
+                    if (hub === token) {
+                        isHubMatch = true;
+                    } else if (token !== "narsingdi" && hub.includes(token)) {
+                        isHubMatch = true;
+                    }
+
+                    const isCidMatch = cid.includes(token);
+                    const isStatusMatch = status.includes(token);
+                    const isAgeMatch = (age === token || age === (token + "d") || String(rawAgeNum) === token);
+
+                    return isHubMatch || isCidMatch || isStatusMatch || isAgeMatch;
+                });
+            });
+        }
+
+        // CSV এক্সপোর্টের জন্য ফিল্টার করা গ্লোবাল ডাটা সেট করা
+        currentFilteredItems = matchingItems;
+
+        const availableStatuses = [...new Set(globalParsedItems.map(i => i.status.toLowerCase()))];
+        const isStatusSearch = tokens.some(token => availableStatuses.some(s => s.includes(token)));
+
+        const groupedCategories = {};
+
+        if (isStatusSearch) {
+            matchingItems.forEach(item => {
+                if (!groupedCategories[item.hub]) groupedCategories[item.hub] = [];
+                groupedCategories[item.hub].push(item);
+            });
+            renderGroupedCards(groupedCategories, true);
+        } else {
+            matchingItems.forEach(item => {
+                if (!groupedCategories[item.status]) groupedCategories[item.status] = [];
+                groupedCategories[item.status].push(item);
+            });
+            renderGroupedCards(groupedCategories, false);
+        }
+
+        renderHubSummary(matchingItems, isPlusSearch);
+        renderPivotTable(matchingItems);
+
+        const naContainer = document.getElementById("notAssignedContainer");
+        if (tokens.length > 0 && matchingItems.length > 0) {
+            let holdNotAssignedCount = 0;
+            let receivedNotAssignedCount = 0;
+
+            matchingItems.forEach(item => {
+                const itemStatus = item.status.toLowerCase();
+
+                if (itemStatus.includes("hold")) {
+                    holdNotAssignedCount++;
+                } else if (itemStatus.includes("received") || itemStatus.includes("last mile")) {
+                    receivedNotAssignedCount++;
+                }
+            });
+
+            document.getElementById("naHoldCount").innerText = holdNotAssignedCount;
+            document.getElementById("naReceivedCount").innerText = receivedNotAssignedCount;
+            naContainer.style.display = "flex";
+        } else {
+            naContainer.style.display = "none";
+        }
+
+        document.getElementById("totalParcelCount").innerText = matchingItems.length;
+    }
+
+    // CSV Download Functionality
+    function exportToCSV() {
+        if (!currentFilteredItems || currentFilteredItems.length === 0) {
+            showToast("ডাউনলোড করার জন্য কোনো ডাটা নেই!");
+            return;
+        }
+
+        let csvContent = "\uFEFF"; // UTF-8 BOM encoding
+        csvContent += "Consignment ID,Hub Name,Status,Aging (Days)\n";
+
+        currentFilteredItems.forEach(item => {
+            let row = `"${item.cid}","${item.hub}","${item.status}","${item.age}"`;
+            csvContent += row + "\n";
+        });
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        
+        const today = new Date().toISOString().slice(0, 10);
+        link.setAttribute("href", url);
+        link.setAttribute("download", `Filtered_Backlog_${today}.csv`);
+        document.body.appendChild(link);
+        
+        link.click();
+        document.body.removeChild(link);
+        showToast("CSV File Downloaded!");
+    }
+
+    function copyCardCids(btn, includeDetails) {
+        const card = btn.closest('.status-card');
+        const visibleCidItems = card.querySelectorAll('.cid-item');
+        const itemsToCopy = [];
+
+        visibleCidItems.forEach(item => {
+            const cid = item.getAttribute('data-rawcid');
+            const hub = item.getAttribute('data-rawhub');
+            const age = item.getAttribute('data-rawage');
+            
+            if (cid) {
+                if (includeDetails) {
+                    itemsToCopy.push(`${cid}\t${hub} (${age})`);
+                } else {
+                    itemsToCopy.push(cid);
+                }
+            }
+        });
+
+        if (itemsToCopy.length > 0) {
+            const textToCopy = itemsToCopy.join('\n');
+            navigator.clipboard.writeText(textToCopy);
+            showToast(includeDetails ? `${itemsToCopy.length} Items copied with Hub & Days!` : `${itemsToCopy.length} CIDs copied!`);
+        } else {
+            showToast('No items to copy!');
+        }
+    }
+
+    function copyText(text) {
+        navigator.clipboard.writeText(text);
+        showToast(`Copied: ${text}`);
+    }
+
+    function showToast(message) {
+        const toast = document.getElementById("toast");
+        toast.innerText = message;
+        toast.style.display = "block";
+        setTimeout(() => { toast.style.display = "none"; }, 2000);
+    }
+
+    function clearDisplay() {
+        document.getElementById("outputGrid").innerHTML = "";
+        document.getElementById("hubGridContainer").innerHTML = "";
+        document.getElementById("pivotTableContainer").innerHTML = "";
+        document.getElementById("hubSummaryCard").style.display = "none";
+        document.getElementById("pivotCard").style.display = "none";
+        document.getElementById("notAssignedContainer").style.display = "none";
+        document.getElementById("totalParcelCount").innerText = "0";
+        currentFilteredItems = [];
+    }
+
+    function clearAll() {
+        document.getElementById("rawInput").value = "";
+        document.getElementById("searchInput").value = "";
+        clearDisplay();
+    }
+</script>
+
+</body>
+</html>
