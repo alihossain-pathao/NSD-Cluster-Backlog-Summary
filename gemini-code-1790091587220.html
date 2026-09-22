@@ -1,0 +1,2423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Narsingdi Cluster & Hub Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+        
+        * { box-sizing: border-box; }
+        body { font-family: 'Inter', system-ui, -apple-system, sans-serif; background-color: #0b1329; color: #f8fafc; margin: 0; padding: 0; }
+
+        .toast-notify { position: fixed; bottom: 20px; right: 20px; background-color: #0f2942; color: #ffffff; padding: 10px 18px; border-radius: 8px; font-size: 12px; font-weight: 700; box-shadow: 0 4px 15px rgba(0,0,0,0.3); z-index: 9999; opacity: 0; transform: translateY(10px); transition: all 0.3s ease; pointer-events: none; border: 1px solid #0284c7; }
+        .toast-notify.show { opacity: 1; transform: translateY(0); }
+
+        .report-body-bg { background-color: #dbe2ef; color: #0f172a; padding: 15px; font-family: 'Segoe UI', Arial, sans-serif; }
+        .dashboard-wrapper { display: flex; gap: 20px; justify-content: center; align-items: flex-start; max-width: 1500px; margin: 0 auto; }
+        .report-card { background: #ffffff; padding: 14px; box-shadow: 0 4px 15px rgba(0,0,0,0.12); border-radius: 8px; border: 1px solid #94a3b8; flex: 1; min-width: 0; color: #0f172a; }
+
+        .header-title { text-align: center; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 2px solid #cbd5e1; }
+        .header-title h2 { margin: 0; color: #0f2942; font-size: 16px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
+        .header-title p { margin: 3px 0 0; color: #475569; font-size: 11px; font-weight: 700; }
+
+        .excel-table { border-collapse: collapse; width: 100%; table-layout: fixed; background-color: #ffffff; border: 1.5px solid #64748b; }
+        .excel-table td { border: 1px solid #94a3b8; padding: 2px 4px; font-size: 10px; font-weight: 600; height: 23px; vertical-align: middle; color: #0f172a; position: relative; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        .excel-table input, .excel-table select { width: 100%; height: 100%; border: none; outline: none; background: transparent; font-weight: 700; font-size: 10px; font-family: inherit; color: #0f172a; padding: 0; margin: 0; text-align: center; line-height: 23px; }
+        .excel-table input[readonly] { background-color: #f1f5f9; color: #000000 !important; cursor: not-allowed; font-weight: 800; }
+        .excel-table select { background-color: #ffffff; border-radius: 3px; border: 1px solid #94a3b8; height: 18px; font-size: 9.5px; cursor: pointer; font-weight: 700; }
+        .excel-table input:focus:not([readonly]), .excel-table select:focus { background-color: #e0f2fe; box-shadow: inset 0 0 0 1.5px #0284c7; }
+
+        .excel-table input[type="number"]::-webkit-outer-spin-button, .excel-table input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        .excel-table input[type="number"] { -moz-appearance: textfield; }
+
+        .text-center { text-align: center; }
+        .text-left { text-align: left; padding-left: 5px; font-weight: 700; }
+
+        .th-primary { background-color: #0f2942 !important; color: #ffffff !important; font-size: 10.5px; text-align: center; font-weight: 800; letter-spacing: 0.3px; }
+        .th-secondary { background-color: #1e293b !important; color: #ffffff !important; font-size: 10.5px; text-align: center; font-weight: 800; letter-spacing: 0.3px; }
+        .th-section { background-color: #cbd5e1; color: #0f172a; font-size: 9.5px; font-weight: 800; text-align: center; }
+
+        .c-aging-24 { background-color: #dcfce7; color: #14532d; text-align: center; font-weight: 700; }
+        .c-aging-48 { background-color: #fef9c3; color: #713f12; text-align: center; font-weight: 700; }
+        .c-aging-72 { background-color: #ffedd5; color: #7c2d12; text-align: center; font-weight: 700; }
+        .c-aging-72p { background-color: #fee2e2; color: #7f1d1d; text-align: center; font-weight: 700; }
+
+        .c-dark-bar { background-color: #1e293b; color: #ffffff !important; font-weight: 800; }
+        .c-dark-bar input { color: #ffffff !important; font-weight: 800; }
+        .c-orange-bar { background-color: #c2410c !important; color: #ffffff !important; text-align: center; font-weight: 800; }
+        .c-muted { background-color: #f1f5f9; color: #334155; font-weight: 700; }
+
+        .c-date-label { background-color: #cbd5e1; color: #0f172a; font-size: 10px; font-weight: 800; }
+        .c-date-val { background-color: #1e293b; color: #ffffff !important; font-weight: 800; }
+        .c-section-cyan { background-color: #1e293b; color: #ffffff !important; font-size: 10px; font-weight: 800; }
+        .c-green { background-color: #14532d; color: #ffffff !important; font-weight: 800; }
+        .c-blue-total { background-color: #0f2942 !important; color: #ffffff !important; font-weight: 800; }
+        .c-teal-assign { background-color: #0369a1 !important; color: #ffffff !important; font-size: 11px; font-weight: 800; }
+        .c-readonly { background-color: #f8fafc; color: #000000 !important; font-weight: 800; }
+
+        #totalDeliveredDisplay { color: #000000 !important; font-weight: 800; }
+
+        .diff-up { color: #16a34a; font-weight: 800; font-size: 11px; }
+        .diff-down { color: #dc2626; font-weight: 800; font-size: 11px; }
+        .diff-neutral { color: #d97706; font-weight: 800; font-size: 11px; }
+
+        .kpi-container { display: flex; gap: 10px; margin-top: 12px; }
+        .kpi-card { flex: 1; background: #ffffff; border-radius: 6px; padding: 8px 10px; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.06); border: 1px solid #cbd5e1; border-top: 3px solid #0369a1; }
+        .kpi-title { font-size: 9px; color: #475569; text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px; }
+        .kpi-value { font-size: 15px; font-weight: 800; margin-top: 2px; color: #0f2942; }
+
+        .action-toolbar-bottom { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 14px; padding-top: 10px; border-top: 1.5px dashed #cbd5e1; }
+        .btn-action { display: inline-flex; align-items: center; gap: 5px; padding: 6px 12px; font-size: 10.5px; font-weight: 700; border-radius: 6px; border: 1px solid transparent; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 2px 4px rgba(0,0,0,0.06); outline: none; }
+        .btn-refresh { background-color: #ffffff; color: #0f172a; border-color: #94a3b8; }
+        .btn-refresh:hover { background-color: #f1f5f9; }
+        .btn-undo { background-color: #ffffff; color: #334155; border-color: #94a3b8; }
+        .btn-undo:hover { background-color: #e2e8f0; }
+        .btn-back-dashboard { background-color: #0f2942; color: #ffffff; border-color: #0369a1; }
+        .btn-back-dashboard:hover { background-color: #1e293b; color: #38bdf8; }
+
+        .att-card { background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.12); border: 1px solid #94a3b8; color: #0f172a; }
+        .att-title-bar { background-color: #2dd4bf; color: #0f172a; text-align: center; font-weight: 800; font-size: 15px; padding: 10px; border-bottom: 1px solid #94a3b8; }
+        .att-hub-bar { background-color: #e2e8f0; color: #0f172a; text-align: center; font-weight: 800; font-size: 13px; padding: 8px; border-bottom: 1px solid #94a3b8; }
+        .att-date-bar { background-color: #0f172a; text-align: center; padding: 6px; border-bottom: 1px solid #94a3b8; }
+        .att-date-bar input { width: 100%; text-align: center; background: transparent; border: none; outline: none; color: #ffffff; font-weight: 800; font-size: 13px; font-family: inherit; }
+        .att-table { border-collapse: collapse; width: 100%; }
+        .att-table td { border: 1px solid #94a3b8; padding: 4px 10px; font-size: 12px; font-weight: 700; color: #0f172a; height: 26px; }
+        .att-table input { width: 100%; height: 100%; border: none; outline: none; background: transparent; font-weight: 700; font-size: 12px; font-family: inherit; color: #0f172a; text-align: center; padding: 0; }
+        .att-table input[type=number]::-webkit-outer-spin-button,
+        .att-table input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        .att-table input[type=number] { -moz-appearance: textfield; appearance: textfield; }
+        .att-table input[readonly] { background-color: #f1f5f9; cursor: not-allowed; }
+        .att-table input:focus:not([readonly]) { background-color: #e0f2fe; box-shadow: inset 0 0 0 1.5px #0284c7; }
+        .att-label { text-align: left; font-weight: 800; }
+        .att-value input { text-align: center; }
+        .att-row-alt td { background-color: #c7d7f5; }
+        .att-thead td { background-color: #1e1b4b; color: #ffffff; text-align: center; font-weight: 800; font-size: 12px; }
+        .att-da-row td { background-color: #dbe6fb; }
+        .att-da-row input { text-align: center; padding-left: 0; }
+        .att-da-row input#dummy { text-align: center; }
+        .att-remove-btn { border: none; background: transparent; color: #dc2626; cursor: pointer; font-size: 12px; width: 100%; }
+
+        /* SIDEBAR STYLES */
+        #sidebarOverlay { transition: opacity 0.3s ease; }
+        #sidebarDrawer { transition: transform 0.3s ease-in-out; }
+
+        /* LOGIN & ACCESS CONTROL STYLES */
+        #loginScreen { position: fixed; inset: 0; z-index: 10000; background: radial-gradient(circle at top, #16233f 0%, #0b1329 65%); display: flex; align-items: center; justify-content: center; padding: 16px; }
+        .login-card { width: 100%; max-width: 380px; background: #131d36; border: 1px solid #1e293b; border-radius: 18px; padding: 32px 28px; box-shadow: 0 20px 50px rgba(0,0,0,0.45); }
+        .login-input { width: 100%; background: #0b1329; color: #f1f5f9; border: 1px solid #334155; border-radius: 10px; padding: 10px 14px; font-size: 13px; font-weight: 600; outline: none; transition: border-color .2s; }
+        .login-input:focus { border-color: #0ea5e9; box-shadow: 0 0 0 3px rgba(14,165,233,0.15); }
+        .view-only-banner { display: flex; align-items: center; gap: 8px; background: #fef2f2; color: #991b1b; border: 1.5px solid #fecaca; border-radius: 8px; padding: 8px 12px; font-size: 11px; font-weight: 800; margin-bottom: 10px; }
+        .role-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 999px; font-size: 9.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .3px; }
+        .role-badge.role-admin { background: rgba(56,189,248,0.15); color: #38bdf8; border: 1px solid rgba(56,189,248,0.3); }
+        .role-badge.role-user { background: rgba(148,163,184,0.15); color: #cbd5e1; border: 1px solid rgba(148,163,184,0.3); }
+        .hub-chip { display: inline-flex; padding: 2px 7px; border-radius: 6px; font-size: 9.5px; font-weight: 700; background: rgba(16,185,129,0.12); color: #34d399; border: 1px solid rgba(16,185,129,0.25); }
+
+        @media (max-width: 1200px) {
+            .dashboard-wrapper { flex-direction: column; align-items: center; }
+            .report-card { width: 100%; max-width: 760px; }
+        }
+    </style>
+</head>
+<body class="min-h-screen antialiased flex flex-col">
+
+    <div class="toast-notify" id="toastNotify">
+        <span id="toastMsg">Action completed successfully</span>
+    </div>
+
+    <!-- LOGIN SCREEN -->
+    <div id="loginScreen">
+        <div class="login-card">
+            <div class="text-center mb-6">
+                <div class="w-14 h-14 mx-auto rounded-2xl bg-sky-950/60 border border-sky-800/40 flex items-center justify-center text-sky-400 text-2xl mb-3">
+                    <i class="fa-solid fa-boxes-packing"></i>
+                </div>
+                <h1 class="text-lg font-black text-white">Narsingdi Cluster Ops</h1>
+                <p class="text-xs text-slate-400 font-semibold mt-1">Sign in to access the Hub Dashboard</p>
+            </div>
+
+            <form id="loginForm" class="space-y-3">
+                <div>
+                    <label class="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1.5">Username</label>
+                    <input type="text" id="loginUsername" class="login-input" placeholder="Enter username" autocomplete="username" required>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1.5">Password</label>
+                    <input type="password" id="loginPassword" class="login-input" placeholder="Enter password" autocomplete="current-password" required>
+                </div>
+
+                <div id="loginError" class="hidden text-rose-400 text-[11px] font-bold bg-rose-950/40 border border-rose-800/50 rounded-lg px-3 py-2 flex items-center gap-2">
+                    <i class="fa-solid fa-circle-exclamation"></i> <span></span>
+                </div>
+
+                <button type="submit" class="w-full bg-sky-600 hover:bg-sky-500 text-white text-sm font-black py-2.5 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 mt-2">
+                    <i class="fa-solid fa-right-to-bracket"></i> Login
+                </button>
+            </form>
+
+            <p class="text-center text-[10px] text-slate-500 font-semibold mt-5">Access is controlled by your Cluster Admin.</p>
+        </div>
+    </div>
+
+    <!-- APP SHELL (hidden until login) -->
+    <div id="appShell" class="hidden">
+
+    <!-- SIDEBAR OVERLAY & DRAWER -->
+    <div id="sidebarOverlay" onclick="toggleSidebar()" class="hidden fixed inset-0 bg-black/60 z-40 backdrop-blur-sm"></div>
+    <aside id="sidebarDrawer" class="fixed top-0 left-0 h-full w-72 bg-[#131d36] border-r border-slate-800 z-50 transform -translate-x-full flex flex-col justify-between p-4 shadow-2xl">
+        <div>
+            <div class="flex items-center justify-between pb-4 border-b border-slate-800 mb-5">
+                <span class="text-sm font-black text-white flex items-center gap-2.5">
+                    <span class="w-8 h-8 rounded-lg bg-sky-950/60 border border-sky-800/40 flex items-center justify-center text-sky-400">
+                        <i class="fa-solid fa-compass"></i>
+                    </span>
+                    <span>
+                        Navigation Menu
+                        <span class="block text-[9px] font-bold text-slate-500 tracking-wider normal-case">Narsingdi Cluster Ops</span>
+                    </span>
+                </span>
+                <button onclick="toggleSidebar()" class="text-slate-400 hover:text-white hover:bg-slate-800 p-1.5 rounded-lg transition">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <nav class="space-y-5 overflow-y-auto pr-1" style="max-height: calc(100vh - 130px);">
+                <div class="space-y-1.5">
+                    <button onclick="switchDashboardTab('overview'); toggleSidebar();" id="sideBtnOverview" class="w-full group flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 bg-sky-600 text-white shadow-lg shadow-sky-950/50">
+                        <span class="w-8 h-8 rounded-lg bg-white/15 flex items-center justify-center flex-shrink-0 text-sm">
+                            <i class="fa-solid fa-table-cells"></i>
+                        </span>
+                        <span class="truncate">Master Hub Cards</span>
+                    </button>
+                </div>
+
+                <!-- TASK NAVIGATION BUTTONS -->
+                <div class="space-y-1.5">
+                    <p class="px-3 text-[10px] font-black text-slate-500 uppercase tracking-widest">Daily Task Sheets</p>
+                    <button onclick="switchDashboardTab('morningTasks'); toggleSidebar();" id="sideBtnMorning" class="w-full group flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 text-slate-400 hover:text-white hover:bg-slate-800/70">
+                        <span class="w-8 h-8 rounded-lg bg-amber-950/60 border border-amber-800/40 flex items-center justify-center flex-shrink-0 text-amber-400 text-sm">
+                            <i class="fa-solid fa-sun"></i>
+                        </span>
+                        <span class="truncate">Morning Tasks Sheets</span>
+                    </button>
+                    <button onclick="switchDashboardTab('eveningTasks'); toggleSidebar();" id="sideBtnEvening" class="w-full group flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 text-slate-400 hover:text-white hover:bg-slate-800/70">
+                        <span class="w-8 h-8 rounded-lg bg-indigo-950/60 border border-indigo-800/40 flex items-center justify-center flex-shrink-0 text-indigo-400 text-sm">
+                            <i class="fa-solid fa-moon"></i>
+                        </span>
+                        <span class="truncate">Evening Tasks Sheets</span>
+                    </button>
+                    <button onclick="switchDashboardTab('agentOnboarding'); toggleSidebar();" id="sideBtnAgentOnboarding" class="w-full group flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 text-slate-400 hover:text-white hover:bg-slate-800/70">
+                        <span class="w-8 h-8 rounded-lg bg-emerald-950/60 border border-emerald-800/40 flex items-center justify-center flex-shrink-0 text-emerald-400 text-sm">
+                            <i class="fa-solid fa-user-plus"></i>
+                        </span>
+                        <span class="truncate">Agent Onboarding</span>
+                    </button>
+                </div>
+
+                <div class="space-y-1.5">
+                    <p class="px-3 text-[10px] font-black text-slate-500 uppercase tracking-widest">Analytics</p>
+                    <button onclick="openHubOverviewModal(); toggleSidebar();" class="w-full group flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 text-slate-400 hover:text-white hover:bg-slate-800/70">
+                        <span class="w-8 h-8 rounded-lg bg-sky-950/60 border border-sky-800/40 flex items-center justify-center flex-shrink-0 text-sky-400 text-sm">
+                            <i class="fa-solid fa-table-list"></i>
+                        </span>
+                        <span class="truncate">Cluster Hubs Overview</span>
+                    </button>
+                    <button onclick="switchDashboardTab('matrix'); toggleSidebar();" id="sideBtnMatrix" class="w-full group flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 text-slate-400 hover:text-white hover:bg-slate-800/70">
+                        <span class="w-8 h-8 rounded-lg bg-cyan-950/60 border border-cyan-800/40 flex items-center justify-center flex-shrink-0 text-cyan-400 text-sm">
+                            <i class="fa-solid fa-chart-simple"></i>
+                        </span>
+                        <span class="truncate">All-Hub Comparison Matrix</span>
+                    </button>
+                    <button onclick="switchDashboardTab('leaderboard'); toggleSidebar();" id="sideBtnLeaderboard" class="w-full group flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 text-slate-400 hover:text-white hover:bg-slate-800/70">
+                        <span class="w-8 h-8 rounded-lg bg-amber-950/60 border border-amber-800/40 flex items-center justify-center flex-shrink-0 text-amber-400 text-sm">
+                            <i class="fa-solid fa-trophy"></i>
+                        </span>
+                        <span class="truncate">Performance Leaderboard</span>
+                    </button>
+                </div>
+
+                <div class="space-y-1.5">
+                    <p class="px-3 text-[10px] font-black text-slate-500 uppercase tracking-widest">Hub Management</p>
+                    <button onclick="openClusterSummaryModal(); toggleSidebar();" class="w-full group flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 text-slate-400 hover:text-white hover:bg-slate-800/70">
+                        <span class="w-8 h-8 rounded-lg bg-emerald-950/60 border border-emerald-800/40 flex items-center justify-center flex-shrink-0 text-emerald-400 text-sm">
+                            <i class="fa-solid fa-chart-pie"></i>
+                        </span>
+                        <span class="truncate">All Hub Summary</span>
+                    </button>
+                    <button onclick="openAddHubModal(); toggleSidebar();" class="w-full group flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 text-slate-400 hover:text-white hover:bg-slate-800/70">
+                        <span class="w-8 h-8 rounded-lg bg-sky-950/60 border border-sky-800/40 flex items-center justify-center flex-shrink-0 text-sky-400 text-sm">
+                            <i class="fa-solid fa-plus"></i>
+                        </span>
+                        <span class="truncate">Add New Hub</span>
+                    </button>
+                    <button onclick="openRemoveHubModal(); toggleSidebar();" class="w-full group flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 text-slate-400 hover:text-white hover:bg-slate-800/70">
+                        <span class="w-8 h-8 rounded-lg bg-rose-950/60 border border-rose-800/40 flex items-center justify-center flex-shrink-0 text-rose-400 text-sm">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </span>
+                        <span class="truncate">Remove Hub</span>
+                    </button>
+                </div>
+
+                <div class="space-y-1.5 hidden" id="sidebarAdminSection">
+                    <p class="px-3 text-[10px] font-black text-slate-500 uppercase tracking-widest">Administration</p>
+                    <button onclick="openAdminPanel(); toggleSidebar();" class="w-full group flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 text-slate-400 hover:text-white hover:bg-slate-800/70">
+                        <span class="w-8 h-8 rounded-lg bg-sky-950/60 border border-sky-800/40 flex items-center justify-center flex-shrink-0 text-sky-400 text-sm">
+                            <i class="fa-solid fa-user-shield"></i>
+                        </span>
+                        <span class="truncate">User &amp; Hub Access</span>
+                    </button>
+                </div>
+
+                <div class="space-y-1.5">
+                    <p class="px-3 text-[10px] font-black text-slate-500 uppercase tracking-widest">Data</p>
+                    <button onclick="exportDashboardData(); toggleSidebar();" class="w-full group flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 text-slate-400 hover:text-white hover:bg-slate-800/70">
+                        <span class="w-8 h-8 rounded-lg bg-sky-950/60 border border-sky-800/40 flex items-center justify-center flex-shrink-0 text-sky-400 text-sm">
+                            <i class="fa-solid fa-download"></i>
+                        </span>
+                        <span class="truncate">Export Data (JSON)</span>
+                    </button>
+                    <button onclick="triggerImportJSON(); toggleSidebar();" class="w-full group flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 text-slate-400 hover:text-white hover:bg-slate-800/70">
+                        <span class="w-8 h-8 rounded-lg bg-emerald-950/60 border border-emerald-800/40 flex items-center justify-center flex-shrink-0 text-emerald-400 text-sm">
+                            <i class="fa-solid fa-upload"></i>
+                        </span>
+                        <span class="truncate">Import Data</span>
+                    </button>
+                </div>
+            </nav>
+        </div>
+
+        <div class="pt-4 border-t border-slate-800 space-y-3">
+            <div class="flex items-center justify-between bg-[#0b1329] border border-slate-800 rounded-xl px-3 py-2.5">
+                <div class="min-w-0">
+                    <span class="text-xs font-black text-white block truncate" id="sidebarUserName">-</span>
+                    <span class="role-badge role-user mt-1" id="sidebarUserRole">USER</span>
+                </div>
+                <button onclick="handleLogout()" title="Logout" class="text-slate-400 hover:text-rose-400 p-2 rounded-lg hover:bg-rose-950/40 transition flex-shrink-0">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                </button>
+            </div>
+            <span class="text-[10px] text-slate-500 font-bold uppercase tracking-wider block text-center">Narsingdi Cluster Ops v2.0</span>
+        </div>
+    </aside>
+
+    <!-- MAIN DASHBOARD VIEW -->
+    <div id="hubDashboardView" class="p-4 md:p-8 max-w-[1700px] mx-auto space-y-6 w-full">
+        
+        <!-- DASHBOARD TOP HEADER -->
+        <div class="flex flex-col md:flex-row items-center justify-between gap-4 bg-[#131d36] p-5 rounded-2xl border border-slate-800 shadow-xl sticky z-30" style="top: env(safe-area-inset-top, 0px); backdrop-filter: blur(4px);">
+            <div class="flex items-center gap-3">
+                <!-- HAMBURGER BUTTON -->
+                <button onclick="toggleSidebar()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 p-2.5 rounded-xl border border-slate-700 transition flex items-center justify-center shadow-md">
+                    <i class="fa-solid fa-bars text-lg text-sky-400"></i>
+                </button>
+
+                <div>
+                    <h1 class="text-2xl font-black text-white tracking-wide flex items-center gap-3">
+                        <i class="fa-solid fa-boxes-packing text-sky-400"></i>
+                        Narsingdi Cluster Operations Center
+                    </h1>
+                    <p class="text-xs text-slate-400 mt-1 font-semibold">Real-time Dispatch Tracking, Delivery Performance & Hub Management</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2 bg-[#0b1329] border border-slate-800 rounded-xl px-4 py-2">
+                <span class="relative flex h-2.5 w-2.5">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                </span>
+                <div class="text-right">
+                    <span class="text-[9px] text-slate-500 font-bold uppercase tracking-wider block">Last Updated</span>
+                    <span class="text-xs text-emerald-400 font-black" id="lastUpdatedTime">--:--:--</span>
+                </div>
+            </div>
+            
+            <input type="file" id="importJsonInput" class="hidden" accept=".json" onchange="importDashboardData(event)">
+        </div>
+
+        <!-- TOP 4 KPI STAT CARDS -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="bg-[#131d36] border border-slate-800 rounded-xl p-5 flex items-center justify-between shadow-lg hover:-translate-y-1 hover:border-sky-800/60 transition-all duration-200">
+                <div>
+                    <span class="text-xs uppercase font-bold text-slate-400 tracking-wider">TOTAL CLUSTER HUBS</span>
+                    <div class="text-3xl font-black text-white mt-1" id="totalHubsCount">3 Hubs</div>
+                    <span class="text-xs font-semibold text-emerald-400 flex items-center gap-1 mt-1">
+                        <i class="fa-solid fa-circle-check"></i> 100% Operational
+                    </span>
+                </div>
+                <div class="w-12 h-12 bg-sky-950/60 rounded-xl flex items-center justify-center text-sky-400 text-xl border border-sky-800/40">
+                    <i class="fa-solid fa-warehouse"></i>
+                </div>
+            </div>
+
+            <div class="bg-[#131d36] border border-slate-800 rounded-xl p-5 flex items-center justify-between shadow-lg hover:-translate-y-1 hover:border-emerald-800/60 transition-all duration-200">
+                <div>
+                    <span class="text-xs uppercase font-bold text-slate-400 tracking-wider">AVG DELIVERY RATE</span>
+                    <div class="text-3xl font-black text-emerald-400 mt-1" id="clusterDeliveryRate">83.2%</div>
+                    <span class="text-xs font-semibold text-slate-400 flex items-center gap-1 mt-1">
+                        <i class="fa-solid fa-chart-line"></i> Target: >80%
+                    </span>
+                </div>
+                <div class="w-12 h-12 bg-emerald-950/60 rounded-xl flex items-center justify-center text-emerald-400 text-xl border border-emerald-800/40">
+                    <i class="fa-solid fa-truck-ramp-box"></i>
+                </div>
+            </div>
+
+            <div class="bg-[#131d36] border border-slate-800 rounded-xl p-5 flex items-center justify-between shadow-lg hover:-translate-y-1 hover:border-indigo-800/60 transition-all duration-200">
+                <div>
+                    <span class="text-xs uppercase font-bold text-slate-400 tracking-wider">ACTIVE AGENTS (DA)</span>
+                    <div class="text-3xl font-black text-white mt-1" id="clusterTotalDA">27 / 33 DA</div>
+                    <span class="text-xs font-semibold text-sky-400 flex items-center gap-1 mt-1">
+                        <i class="fa-solid fa-user-check"></i> 81.8% Attendance
+                    </span>
+                </div>
+                <div class="w-12 h-12 bg-indigo-950/60 rounded-xl flex items-center justify-center text-indigo-400 text-xl border border-indigo-800/40">
+                    <i class="fa-solid fa-users"></i>
+                </div>
+            </div>
+
+            <div class="bg-[#131d36] border border-slate-800 rounded-xl p-5 flex items-center justify-between shadow-lg hover:-translate-y-1 hover:border-amber-800/60 transition-all duration-200">
+                <div>
+                    <span class="text-xs uppercase font-bold text-slate-400 tracking-wider">TOTAL CLUSTER COLLECTION</span>
+                    <div class="text-2xl font-black text-amber-400 mt-1" id="clusterTotalCollection">৳ 305,000</div>
+                    <span class="text-xs font-semibold text-emerald-400 flex items-center gap-1 mt-1">
+                        <i class="fa-solid fa-money-bill-wave"></i> Reconciled
+                    </span>
+                </div>
+                <div class="w-12 h-12 bg-amber-950/60 rounded-xl flex items-center justify-center text-amber-400 text-xl border border-amber-800/40">
+                    <i class="fa-solid fa-sack-dollar"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- CLUSTER HEALTH ALERT & WARNING NOTICES -->
+        <div class="bg-[#131d36] border border-slate-800 rounded-xl p-4 shadow-lg space-y-3">
+            <div class="flex items-center justify-between">
+                <h3 class="text-xs font-black text-white uppercase tracking-wider flex items-center gap-2">
+                    <i class="fa-solid fa-bullhorn text-amber-400"></i> Cluster Notices
+                </h3>
+                <button onclick="openAddNoticeModal()" class="bg-amber-600 hover:bg-amber-500 text-white text-[11px] font-bold px-3 py-1.5 rounded-lg transition-all duration-200 flex items-center gap-1.5 shadow-md">
+                    <i class="fa-solid fa-plus"></i> Post Notice
+                </button>
+            </div>
+
+            <div id="clusterAlertsContainer" class="hidden relative overflow-hidden bg-gradient-to-r from-amber-950/70 via-amber-950/40 to-transparent border border-amber-700/50 rounded-xl p-4 shadow-lg flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-amber-500/15 flex items-center justify-center text-amber-400 text-lg flex-shrink-0 border border-amber-500/30">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                    </div>
+                    <div>
+                        <h4 class="text-xs font-black uppercase text-amber-300 tracking-wider flex items-center gap-2">
+                            Cluster Operations Notice
+                            <span class="px-1.5 py-0.5 bg-amber-500/20 text-amber-300 rounded text-[9px] font-bold tracking-wide">AUTO</span>
+                        </h4>
+                        <p class="text-xs text-amber-100/90 font-medium mt-0.5" id="clusterAlertText">Some hubs require supervisor attention due to high hold rate or low agent attendance.</p>
+                    </div>
+                </div>
+                <button onclick="dismissClusterAlert()" class="text-amber-300 hover:text-white text-xs font-bold px-3 py-1.5 bg-amber-900/70 hover:bg-amber-800 border border-amber-700/60 rounded-lg transition self-end md:self-auto flex-shrink-0">
+                    Acknowledge
+                </button>
+            </div>
+
+            <div id="customNoticesStack" class="space-y-2.5"></div>
+
+            <p id="noNoticesMsg" class="hidden text-center text-[11px] text-slate-500 font-semibold py-1.5">
+                <i class="fa-solid fa-circle-check text-emerald-500 mr-1"></i> No active notices right now.
+            </p>
+        </div>
+
+        <!-- POST NOTICE MODAL -->
+        <div id="addNoticeModal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div class="bg-[#131d36] border border-slate-700 rounded-xl w-full max-w-md p-6 shadow-2xl relative">
+                <div class="flex items-center justify-between pb-4 border-b border-slate-800 mb-4">
+                    <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-bullhorn text-amber-400"></i> Post a Notice
+                    </h3>
+                    <button onclick="closeAddNoticeModal()" class="text-slate-400 hover:text-white text-lg">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+
+                <form id="noticeForm" onsubmit="handleSaveNotice(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-300 mb-1">Notice Title</label>
+                        <input type="text" id="noticeTitleInput" required placeholder="e.g. Vehicle Delay at Hub 2" class="w-full bg-[#0b1329] text-sm text-slate-200 rounded-lg px-3 py-2 border border-slate-700 focus:outline-none focus:border-amber-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-300 mb-1">Message</label>
+                        <textarea id="noticeMessageInput" required rows="3" placeholder="Write the notice details..." class="w-full bg-[#0b1329] text-sm text-slate-200 rounded-lg px-3 py-2 border border-slate-700 focus:outline-none focus:border-amber-500 resize-none"></textarea>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-300 mb-1">Severity</label>
+                        <select id="noticeSeverityInput" class="w-full bg-[#0b1329] text-sm text-slate-200 rounded-lg px-3 py-2 border border-slate-700 focus:outline-none focus:border-amber-500">
+                            <option value="info">Info</option>
+                            <option value="warning" selected>Warning</option>
+                            <option value="critical">Critical</option>
+                        </select>
+                    </div>
+
+                    <div class="pt-3 flex items-center justify-end gap-3 border-t border-slate-800">
+                        <button type="button" onclick="closeAddNoticeModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-lg transition">
+                            Cancel
+                        </button>
+                        <button type="submit" class="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold rounded-lg transition">
+                            Post Notice
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- NAVIGATION MENU TRIGGER & TASK TABS BAR -->
+        <div class="flex flex-wrap items-center justify-between bg-[#131d36] p-2.5 rounded-xl border border-slate-800 gap-3">
+            <div class="flex items-center gap-2">
+                <button onclick="toggleSidebar()" class="px-4 py-2 text-xs font-bold rounded-lg transition bg-sky-600 text-white shadow-sm flex items-center gap-2">
+                    <i class="fa-solid fa-bars"></i> Navigation Menu
+                </button>
+            </div>
+
+            <!-- MORNING & EVENING TASKS QUICK TABS -->
+            <div class="flex items-center gap-2">
+                <button onclick="switchDashboardTab('morningTasks')" id="topTabMorning" class="px-4 py-2 text-xs font-bold rounded-lg transition bg-slate-800 text-slate-300 hover:bg-slate-700 flex items-center gap-2 border border-slate-700">
+                    <i class="fa-solid fa-sun text-amber-400"></i> Morning Tasks
+                </button>
+                <button onclick="switchDashboardTab('eveningTasks')" id="topTabEvening" class="px-4 py-2 text-xs font-bold rounded-lg transition bg-slate-800 text-slate-300 hover:bg-slate-700 flex items-center gap-2 border border-slate-700">
+                    <i class="fa-solid fa-moon text-indigo-400"></i> Evening Tasks
+                </button>
+                <button onclick="switchDashboardTab('agentOnboarding')" id="topTabAgentOnboarding" class="px-4 py-2 text-xs font-bold rounded-lg transition bg-slate-800 text-slate-300 hover:bg-slate-700 flex items-center gap-2 border border-slate-700">
+                    <i class="fa-solid fa-user-plus text-emerald-400"></i> Agent Onboarding
+                </button>
+            </div>
+        </div>
+
+        <!-- TAB: MORNING TASKS SECTION -->
+        <div id="viewMorningTasks" class="hidden bg-[#131d36] border border-slate-800 rounded-xl p-5 shadow-xl">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-800">
+                <div>
+                    <h2 class="text-lg font-black text-white flex items-center gap-2">
+                        <i class="fa-solid fa-sun text-amber-400"></i> Morning Tasks Sheets
+                    </h2>
+                    <p class="text-xs text-slate-400 font-medium mt-0.5">Manage and track your morning dispatch sheets and operational links</p>
+                </div>
+                <button onclick="openAddSheetModal('morning')" class="bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold px-4 py-2 rounded-lg transition flex items-center gap-2 shadow-md">
+                    <i class="fa-solid fa-plus"></i> Add Morning Sheet
+                </button>
+            </div>
+
+            <div id="morningSheetsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <!-- Sheets rendered dynamically -->
+            </div>
+        </div>
+
+        <!-- TAB: EVENING TASKS SECTION -->
+        <div id="viewEveningTasks" class="hidden bg-[#131d36] border border-slate-800 rounded-xl p-5 shadow-xl">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-800">
+                <div>
+                    <h2 class="text-lg font-black text-white flex items-center gap-2">
+                        <i class="fa-solid fa-moon text-indigo-400"></i> Evening Tasks Sheets
+                    </h2>
+                    <p class="text-xs text-slate-400 font-medium mt-0.5">Manage closing sheets, reconciliation reports, and evening tracking links</p>
+                </div>
+                <button onclick="openAddSheetModal('evening')" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-4 py-2 rounded-lg transition flex items-center gap-2 shadow-md">
+                    <i class="fa-solid fa-plus"></i> Add Evening Sheet
+                </button>
+            </div>
+
+            <div id="eveningSheetsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <!-- Sheets rendered dynamically -->
+            </div>
+        </div>
+
+        <!-- TAB: AGENT ONBOARDING SECTION -->
+        <div id="viewAgentOnboarding" class="hidden bg-[#131d36] border border-slate-800 rounded-xl p-5 shadow-xl">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-800">
+                <div>
+                    <h2 class="text-lg font-black text-white flex items-center gap-2">
+                        <i class="fa-solid fa-user-plus text-emerald-400"></i> Agent Onboarding
+                    </h2>
+                    <p class="text-xs text-slate-400 font-medium mt-0.5">Manage and track agent onboarding sheets and related links</p>
+                </div>
+                <button onclick="openAddSheetModal('agentOnboarding')" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-4 py-2 rounded-lg transition flex items-center gap-2 shadow-md">
+                    <i class="fa-solid fa-plus"></i> Add Sheet
+                </button>
+            </div>
+
+            <div id="agentOnboardingSheetsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <!-- Sheets rendered dynamically -->
+            </div>
+        </div>
+
+        <!-- TAB 1: ALL-HUB CONSOLIDATED COMPARISON MATRIX -->
+        <div id="viewMatrix" class="hidden bg-[#131d36] border border-slate-800 rounded-xl p-5 shadow-xl">
+            <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-800">
+                <div>
+                    <h2 class="text-base font-extrabold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-layer-group text-sky-400"></i> Consolidated All-Hub Operational Matrix
+                    </h2>
+                    <p class="text-xs text-slate-400 font-medium mt-0.5">Real-time side-by-side comparison of dispatch, delivery rate, collection & holds</p>
+                </div>
+                <span class="px-2.5 py-1 bg-emerald-950 text-emerald-400 border border-emerald-800 text-[10px] font-black rounded-lg">
+                    <i class="fa-solid fa-bolt"></i> Live Aggregation
+                </span>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs text-slate-300">
+                    <thead class="bg-[#0b1329] text-slate-400 uppercase font-extrabold text-[10px] tracking-wider border-b border-slate-800">
+                        <tr>
+                            <th class="p-3">Hub Name & Code</th>
+                            <th class="p-3 text-center">Active DA</th>
+                            <th class="p-3 text-center">Total Volume</th>
+                            <th class="p-3 text-center">Delivered</th>
+                            <th class="p-3 text-center">Delivery Rate</th>
+                            <th class="p-3 text-center">Total Hold</th>
+                            <th class="p-3 text-center">Collection</th>
+                            <th class="p-3 text-center">Pending Issues</th>
+                        </tr>
+                    </thead>
+                    <tbody id="consolidatedMatrixBody" class="divide-y divide-slate-800/80 font-semibold">
+                    </tbody>
+                    <tfoot class="bg-[#0b1329] border-t-2 border-sky-500 font-extrabold text-white">
+                        <tr id="consolidatedMatrixFooter">
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+
+        <!-- TAB 2: HUB PERFORMANCE LEADERBOARD -->
+        <div id="viewLeaderboard" class="hidden bg-[#131d36] border border-slate-800 rounded-xl p-5 shadow-xl">
+            <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-800">
+                <div>
+                    <h2 class="text-base font-extrabold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-trophy text-amber-400"></i> Cluster Performance Ranking & Productivity
+                    </h2>
+                    <p class="text-xs text-slate-400 font-medium mt-0.5">Ranked by Delivery Rate % and DA Productivity</p>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="leaderboardGrid">
+            </div>
+        </div>
+
+        <!-- TAB 3: HUB MANAGEMENT CARDS (TABLE MOVED TO NAV MENU MODAL) -->
+        <div id="viewOverview" class="space-y-6">
+            <!-- HUB MANAGEMENT CARDS (UNTOUCHED) -->
+            <div>
+                <h2 class="text-base font-extrabold text-white mb-3 flex items-center gap-2">
+                    <i class="fa-solid fa-cubes text-sky-400"></i> Hub Management Cards
+                </h2>
+                <div id="hubCardsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CLUSTER HUBS LIVE OPERATIONAL OVERVIEW MODAL (MOVED FROM DASHBOARD TO NAVIGATION MENU) -->
+    <div id="hubOverviewTableModal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-[#131d36] border border-slate-700 rounded-xl w-full max-w-5xl max-h-[90vh] overflow-y-auto p-6 shadow-2xl relative">
+            <div class="flex items-center justify-between pb-4 border-b border-slate-800 mb-4">
+                <h2 class="text-base font-extrabold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-table-list text-sky-400"></i> Cluster Hubs Live Operational Overview
+                    <span class="text-xs text-slate-400 font-semibold">Updated Real-Time</span>
+                </h2>
+                <button onclick="closeHubOverviewModal()" class="text-slate-400 hover:text-white text-lg">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="relative w-full mb-4">
+                <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                <input type="text" id="searchInput" oninput="filterHubs()" placeholder="Search Hub Name or Hub Code..." class="w-full bg-[#0b1329] text-sm text-slate-200 placeholder-slate-500 rounded-lg pl-10 pr-4 py-2.5 border border-slate-700/60 focus:outline-none focus:border-sky-500 transition">
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs text-slate-300">
+                    <thead class="bg-[#0b1329] text-slate-400 uppercase font-extrabold text-[10px] tracking-wider border-b border-slate-800">
+                        <tr>
+                            <th class="p-3">Hub Name & Code</th>
+                            <th class="p-3 text-center">Hub Type</th>
+                            <th class="p-3 text-center">Total Volume</th>
+                            <th class="p-3 text-center">DA Present</th>
+                            <th class="p-3 text-center">Delivery Rate</th>
+                            <th class="p-3 text-center">Total Hold</th>
+                            <th class="p-3 text-center">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="clusterOverviewTableBody" class="divide-y divide-slate-800/80">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- COMBINED REPORT VIEW -->
+    <div id="hubReportView" class="hidden report-body-bg min-h-screen">
+        <div class="view-only-banner hidden" id="hubReportViewOnlyBanner" style="max-width: 1500px; margin: 0 auto 10px;" data-html2canvas-ignore="true">
+            <i class="fa-solid fa-lock"></i> View Only — You don't have edit access for this Hub. Contact your Cluster Admin to request access.
+        </div>
+        <div class="dashboard-wrapper pt-4" id="captureContainer">
+            <div class="report-card" id="morningReportCard">
+                <div class="header-title">
+                    <h2 id="morningHeaderTitle">NARSINGDI HUB - MORNING DISPATCH REPORT</h2>
+                    <p>Daily Operations & Dispatch Summary</p>
+                </div>
+
+                <table class="excel-table" id="morningReportTable">
+                    <colgroup>
+                        <col style="width: 25%;">
+                        <col style="width: 12%;">
+                        <col style="width: 13%;">
+                        <col style="width: 25%;">
+                        <col style="width: 12%;">
+                        <col style="width: 13%;">
+                    </colgroup>
+
+                    <tr>
+                        <td colspan="3" class="c-date-label text-center">Date</td>
+                        <td colspan="3" class="c-date-val text-center">
+                            <input type="text" id="m_reportDate" placeholder="DD-MM-YYYY" style="color: #fff;">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="text-left">Van In time</td>
+                        <td colspan="2"><input type="text" id="m_vanInTime" value="10:14 AM"></td>
+                        <td class="text-left">Total Number of DA</td>
+                        <td colspan="2"><input type="number" id="m_totalDA" value="16"></td>
+                    </tr>
+                    <tr>
+                        <td class="text-left">Last Agent Dispatch Time</td>
+                        <td colspan="2"><input type="text" id="m_dispatchTime" value="11:30 AM"></td>
+                        <td class="text-left">Present DA</td>
+                        <td><input type="number" id="m_presentDA" value="13"></td>
+                        <td class="text-center c-readonly" id="m_presentDAPct">-</td>
+                    </tr>
+                    <tr>
+                        <td class="text-left">Elapsed Time</td>
+                        <td colspan="2" class="text-center c-readonly" id="m_elapsedTime">0 Hours 0 Minutes</td>
+                        <td class="text-left">Weekend/Absent</td>
+                        <td class="text-center c-readonly" id="m_absentDA">0</td>
+                        <td class="text-center c-readonly" id="m_absentDAPct">-</td>
+                    </tr>
+                    <tr>
+                        <td colspan="2" class="c-section-cyan text-center">Received Parcel Ageing</td>
+                        <td class="th-secondary">Ratio</td>
+                        <td class="text-left">On Training</td>
+                        <td colspan="2"><input type="number" id="m_onTrainingDA" value="0"></td>
+                    </tr>
+                    <tr>
+                        <td class="text-left">Within 1 Days-</td>
+                        <td><input type="number" id="m_age1" value="205"></td>
+                        <td class="text-center c-readonly" id="m_age1Pct">-</td>
+                        <td colspan="3" class="c-green text-center">Hub In-Charge</td>
+                    </tr>
+                    <tr>
+                        <td class="text-left">Within 2 Days-</td>
+                        <td><input type="number" id="m_age2" value="34"></td>
+                        <td class="text-center c-readonly" id="m_age2Pct">-</td>
+                        <td class="text-center" style="font-weight: 800;">Total</td>
+                        <td colspan="2"><input type="number" id="m_totalHubIC" value="3"></td>
+                    </tr>
+                    <tr>
+                        <td class="text-left">Within 3 Days-</td>
+                        <td><input type="number" id="m_age3" value="12"></td>
+                        <td class="text-center c-readonly" id="m_age3Pct">-</td>
+                        <td class="text-center" style="font-weight: 800;">Present</td>
+                        <td><input type="number" id="m_presentHubIC" value="2"></td>
+                        <td class="text-center c-readonly" id="m_presentHubICPct">-</td>
+                    </tr>
+                    <tr>
+                        <td class="text-left">More Than 3 Days-</td>
+                        <td><input type="number" id="m_age4" value="7"></td>
+                        <td class="text-center c-readonly" id="m_age4Pct">-</td>
+                        <td class="text-center" style="font-weight: 800;">Weekend/Absent</td>
+                        <td class="text-center c-readonly" id="m_absentHubIC">0</td>
+                        <td class="text-center c-readonly" id="m_absentHubICPct">-</td>
+                    </tr>
+                    <tr>
+                        <td colspan="5" class="c-section-cyan text-center">Dispatch Report</td>
+                        <td class="th-secondary">Ratio</td>
+                    </tr>
+                    <tr>
+                        <td colspan="3" class="text-left">Previous Hold</td>
+                        <td colspan="2"><input type="number" id="m_prevHold" value="77"></td>
+                        <td class="text-center c-readonly" id="m_prevHoldPct">-</td>
+                    </tr>
+                    <tr>
+                        <td colspan="3" class="text-left">Reattempt Request</td>
+                        <td colspan="2"><input type="number" id="m_reattemptReq" value="9"></td>
+                        <td class="text-center c-readonly" id="m_reattemptReqPct">-</td>
+                    </tr>
+                    <tr>
+                        <td colspan="3" class="text-left">Received Parcel</td>
+                        <td colspan="2"><input type="number" id="m_recParcel" value="260"></td>
+                        <td class="text-center c-readonly" id="m_recParcelPct">-</td>
+                    </tr>
+                    <tr>
+                        <td colspan="3" class="text-left">Area Change/Intrasit</td>
+                        <td colspan="2"><input type="number" id="m_areaChange" value="13"></td>
+                        <td class="text-center c-readonly" id="m_areaChangePct">-</td>
+                    </tr>
+                    <tr class="c-blue-total">
+                        <td colspan="3" class="text-left" style="color:#ffffff;">Total Parcels</td>
+                        <td colspan="2" class="text-center" style="color:#ffffff;" id="m_totalParcels">0</td>
+                        <td class="text-center" style="color:#ffffff;" id="m_totalParcelsPct">100%</td>
+                    </tr>
+                    <tr>
+                        <td colspan="3" class="text-left">Office Hold</td>
+                        <td colspan="2"><input type="number" id="m_officeHold" value="1"></td>
+                        <td class="text-center c-readonly" id="m_officeHoldPct">-</td>
+                    </tr>
+                    <tr>
+                        <td colspan="3" class="text-left">Capacity Shortage</td>
+                        <td colspan="2"><input type="number" id="m_capShort" value="0"></td>
+                        <td class="text-center c-readonly" id="m_capShortPct">-</td>
+                    </tr>
+                    <tr class="c-teal-assign">
+                        <td colspan="4" class="text-center" style="color:#ffffff;">Total Assign For Delivery</td>
+                        <td colspan="2" class="text-center" style="color:#ffffff;" id="m_totalAssign">0</td>
+                    </tr>
+                </table>
+
+                <div class="kpi-container">
+                    <div class="kpi-card">
+                        <div class="kpi-title">Total Parcels</div>
+                        <div class="kpi-value" id="kpiTotalParcels">0</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-title">Delivery Assign Rate</div>
+                        <div class="kpi-value" id="kpiAssignRate">0%</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-title">DA Attendance</div>
+                        <div class="kpi-value" id="kpiDaAttendance">0%</div>
+                    </div>
+                </div>
+
+                <div class="action-toolbar-bottom" data-html2canvas-ignore="true">
+                    <button type="button" onclick="closeReportView()" class="btn-action btn-back-dashboard">
+                        <i class="fa-solid fa-arrow-left"></i>
+                        <span>Back to Dashboard</span>
+                    </button>
+                    <button type="button" class="btn-action btn-refresh" id="btnRefresh">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+                        <span>Refresh Form</span>
+                    </button>
+                    <button type="button" class="btn-action btn-undo" id="btnUndo">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>
+                        <span>Undo</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="report-card" id="closingReportCard">
+                <div class="header-title">
+                    <h2 id="closingHeaderTitle">NARSINGDI HUB - CLOSING REPORT</h2>
+                    <p>Delivery Performance & Operational Summary</p>
+                </div>
+
+                <table class="excel-table" id="fullReportTable">
+                    <colgroup>
+                        <col style="width: 130px;">
+                        <col style="width: 65px;">
+                        <col style="width: 65px;">
+                        <col style="width: 75px;">
+                        <col style="width: 75px;">
+                        <col style="width: 75px;">
+                        <col style="width: 75px;">
+                    </colgroup>
+
+                    <tr>
+                        <td colspan="3" class="th-primary">Closing Summary</td>
+                        <td colspan="4" class="th-secondary">Delivery Aging Report</td>
+                    </tr>
+                    <tr>
+                        <td class="c-muted text-center">Details</td>
+                        <td colspan="2" class="c-muted text-center">QTY</td>
+                        <td class="c-aging-24">24 Hours</td>
+                        <td class="c-aging-48">48 Hours</td>
+                        <td class="c-aging-72">72 Hours</td>
+                        <td class="c-aging-72p">72 Hours +</td>
+                    </tr>
+                    <tr>
+                        <td class="text-left">Previous Hold</td>
+                        <td colspan="2"><input type="number" id="prevHold" readonly title="Auto-synced: Prev Hold + Reattempt Request"></td>
+                        <td rowspan="2"><input type="number" id="age24_qty" value="0"></td>
+                        <td rowspan="2"><input type="number" id="age48_qty" value="0"></td>
+                        <td rowspan="2"><input type="number" id="age72_qty" value="0"></td>
+                        <td rowspan="2"><input type="number" id="age72p_qty" value="0"></td>
+                    </tr>
+                    <tr>
+                        <td class="text-left">Received Parcel</td>
+                        <td colspan="2"><input type="number" id="recParcel" readonly title="Auto-synced from Morning Report"></td>
+                    </tr>
+                    <tr>
+                        <td class="text-left">Area Change / Zone Change</td>
+                        <td colspan="2"><input type="number" id="areaChange" readonly title="Auto-synced from Morning Report"></td>
+                        <td class="c-aging-24" id="age24_pct">-</td>
+                        <td class="c-aging-48" id="age48_pct">-</td>
+                        <td class="c-aging-72" id="age72_pct">-</td>
+                        <td class="c-aging-72p" id="age72p_pct">-</td>
+                    </tr>
+                    <tr class="c-dark-bar">
+                        <td class="text-left" style="color:#fff;">Total Parcel Have to Attempt</td>
+                        <td class="text-center" style="color:#fff;" id="totalAttempt">0</td>
+                        <td class="text-center" style="color:#fff;">Ratio</td>
+                        <td rowspan="2" colspan="2" class="text-center" style="background:#f1f5f9; color:#0f172a; font-weight: 800;">Total Delivered</td>
+                        <td rowspan="2" class="text-center c-readonly"><input type="number" id="totalDeliveredDisplay" readonly value="0" style="font-weight: 800; font-size: 11px; color:#000000;"></td>
+                        <td rowspan="2" class="text-center c-readonly" id="totalDeliveredPct" style="font-weight: 800; font-size: 11px; color:#000000;">-</td>
+                    </tr>
+                    <tr>
+                        <td class="text-left">Office Hold with Reason</td>
+                        <td><input type="number" id="officeHoldReason" readonly title="Auto-synced from Morning Report"></td>
+                        <td class="text-center c-muted" id="officeHoldReasonPct">-</td>
+                    </tr>
+                    <tr>
+                        <td class="text-left">Office Hold (Capacity Shortage)</td>
+                        <td><input type="number" id="capShortage" readonly title="Auto-synced from Morning Report"></td>
+                        <td class="text-center c-muted" id="capShortagePct">-</td>
+                        <td colspan="2" class="th-section">Total Collection</td>
+                        <td colspan="2" class="th-section">Night Payment</td>
+                    </tr>
+                    <tr>
+                        <td class="text-left">Office Return</td>
+                        <td class="text-center c-muted" id="officeReturn">0</td>
+                        <td class="text-center c-muted" id="officeReturnPct">-</td>
+                        <td colspan="2"><input type="number" id="totalCollection" value="0"></td>
+                        <td colspan="2"><input type="number" id="nightPayment" value="0"></td>
+                    </tr>
+                    <tr>
+                        <td class="text-left c-dark-bar" style="color:#fff;">On the Way to Deliver</td>
+                        <td class="text-center c-dark-bar" style="color:#fff;" id="onTheWay">0</td>
+                        <td class="text-center c-dark-bar" style="color:#fff;">Ratio</td>
+                        <td colspan="4" class="c-orange-bar">Previous Day Comparison</td>
+                    </tr>
+                    <tr>
+                        <td class="text-left">Delivered</td>
+                        <td><input type="number" id="delivered" value="0"></td>
+                        <td class="text-center c-muted" id="deliveredPct">-</td>
+                        <td colspan="2" class="c-muted text-center">Previous Ratio</td>
+                        <td colspan="2" class="c-muted text-center">Comparison</td>
+                    </tr>
+                    <tr>
+                        <td class="text-left">Field Hold</td>
+                        <td><input type="number" id="fieldHold" value="0"></td>
+                        <td class="text-center c-muted" id="fieldHoldPct">-</td>
+                        <td colspan="2"><input type="text" id="prevRatioInput1" class="prev-ratio-input" data-target="deliveredPct" data-comp="prevComparisonVal1"></td>
+                        <td colspan="2" class="text-center" id="prevComparisonVal1">-</td>
+                    </tr>
+                    <tr>
+                        <td class="text-left">Field Return</td>
+                        <td><input type="number" id="fieldReturn" value="0"></td>
+                        <td class="text-center c-muted" id="fieldReturnPct">-</td>
+                        <td colspan="2"><input type="text" id="prevRatioInput2" class="prev-ratio-input" data-target="fieldHoldPct" data-comp="prevComparisonVal2"></td>
+                        <td colspan="2" class="text-center" id="prevComparisonVal2">-</td>
+                    </tr>
+                    <tr>
+                        <td class="text-left">Total Hold</td>
+                        <td class="text-center c-muted" id="totalHold">0</td>
+                        <td class="text-center c-muted" id="totalHoldPct">-</td>
+                        <td colspan="2"><input type="text" id="prevRatioInput3" class="prev-ratio-input" data-target="fieldReturnPct" data-comp="prevComparisonVal3"></td>
+                        <td colspan="2" class="text-center" id="prevComparisonVal3">-</td>
+                    </tr>
+                    <tr>
+                        <td colspan="3" class="th-primary">Backlog Report</td>
+                        <td colspan="2" class="th-secondary">Agent Performance Report</td>
+                        <td colspan="2" class="th-secondary">Pickup Report</td>
+                    </tr>
+                    <tr>
+                        <td class="text-left">Total Issue</td>
+                        <td colspan="2"><input type="number" id="totalIssue" value="0"></td>
+                        <td class="c-muted text-center">Current Cap Per Agent</td>
+                        <td class="c-muted text-center">Agent Productivity</td>
+                        <td class="c-muted text-center">Total Merchant</td>
+                        <td class="c-muted text-center">Total Picked</td>
+                    </tr>
+                    <tr>
+                        <td class="text-left">Total Solved</td>
+                        <td><input type="number" id="totalSolved" value="0"></td>
+                        <td class="text-center c-muted" id="totalSolvedPct">-</td>
+                        <td rowspan="2" class="text-center c-readonly" id="currentCapPerAgent">0</td>
+                        <td rowspan="2" class="text-center c-readonly" id="agentProductivity">0</td>
+                        <td rowspan="2"><input type="number" id="pickedMerchant" value="0"></td>
+                        <td rowspan="2"><input type="number" id="pickedParcel" value="0"></td>
+                    </tr>
+                    <tr>
+                        <td class="text-left">Total Pending</td>
+                        <td><input type="number" id="totalPending" value="0"></td>
+                        <td class="text-center c-muted" id="totalPendingPct">-</td>
+                    </tr>
+                    <tr>
+                        <td class="text-left">Hub Not Received</td>
+                        <td><input type="number" id="hubNotReceived" value="0"></td>
+                        <td class="text-center c-muted" id="hubNotReceivedPct">-</td>
+                        <td colspan="4" class="th-secondary">IMS Report and Closing Time</td>
+                    </tr>
+                    <tr>
+                        <td class="th-section">Details</td>
+                        <td class="th-section">Return Pending</td>
+                        <td class="th-section">Reverse Pending</td>
+                        <td colspan="2" class="text-left">Assigned</td>
+                        <td colspan="2"><input type="text" id="ims_assigned"></td>
+                    </tr>
+                    <tr>
+                        <td class="text-left">Total Issue</td>
+                        <td><input type="number" id="ims_issue_ret" value="0"></td>
+                        <td><input type="number" id="ims_issue_rev" value="0"></td>
+                        <td colspan="2" class="text-left">Assigned to IR</td>
+                        <td colspan="2"><input type="text" id="ims_assigned_ir"></td>
+                    </tr>
+                    <tr>
+                        <td class="text-left">Solved</td>
+                        <td><input type="number" id="ims_solved_ret" value="0"></td>
+                        <td><input type="number" id="ims_solved_rev" value="0"></td>
+                        <td colspan="2" class="text-left">Last Agent Closing Time</td>
+                        <td colspan="2"><input type="text" id="ims_agent_closing_time" placeholder="hh:mm AM/PM"></td>
+                    </tr>
+                    <tr>
+                        <td class="text-left">Pending</td>
+                        <td><input type="number" id="ims_pending_ret" value="0"></td>
+                        <td><input type="number" id="ims_pending_rev" value="0"></td>
+                        <td colspan="2" class="text-left">Hub Closing Time</td>
+                        <td colspan="2"><input type="text" id="ims_hub_closing_time" placeholder="hh:mm AM/PM"></td>
+                    </tr>
+                    <tr>
+                        <td colspan="7" class="th-secondary text-center" style="font-size: 11px; padding: 4px;">Verifying & Operations Check</td>
+                    </tr>
+                    <tr>
+                        <td colspan="2" class="text-left">Hub Payment Crosscheck</td>
+                        <td>
+                            <select id="v_hub_payment">
+                                <option>Done</option>
+                                <option>Pending</option>
+                            </select>
+                        </td>
+                        <td colspan="3" class="text-left">IR & Group Issues Replied</td>
+                        <td>
+                            <select id="v_ir_group">
+                                <option>Done</option>
+                                <option>Pending</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="2" class="text-left">Pickup-Area Change & Return...</td>
+                        <td>
+                            <select id="v_pickup_area">
+                                <option>Done</option>
+                                <option>Pending</option>
+                            </select>
+                        </td>
+                        <td colspan="3" class="text-left">Reminder for Pickup</td>
+                        <td>
+                            <select id="v_reminder_pickup">
+                                <option>Done</option>
+                                <option>Pending</option>
+                            </select>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- D.A. ATTENDANCE REPORT VIEW -->
+    <div id="attendanceReportView" class="hidden report-body-bg min-h-screen">
+        <div class="view-only-banner hidden" id="attendanceViewOnlyBanner" style="max-width: 480px; margin: 10px auto 0;" data-html2canvas-ignore="true">
+            <i class="fa-solid fa-lock"></i> View Only — You don't have edit access for this Hub.
+        </div>
+        <div class="pt-4 pb-10" style="max-width: 480px; margin: 0 auto;" id="attendanceCaptureContainer">
+            <div class="att-card">
+                <div class="att-title-bar">D.A. Attendance Report</div>
+                <div class="att-hub-bar" id="att_hubNameDisplay">Hub Name</div>
+                <div class="att-date-bar">
+                    <input type="text" id="att_reportDate" placeholder="DD-MMM-YYYY">
+                </div>
+
+                <table class="att-table">
+                    <tr>
+                        <td class="att-label">Total Delivery Agent :</td>
+                        <td class="att-value"><input type="number" id="att_totalDA" value="0"></td>
+                    </tr>
+                    <tr class="att-row-alt">
+                        <td class="att-label">Present :</td>
+                        <td class="att-value"><input type="number" id="att_present" value="0" readonly></td>
+                    </tr>
+                    <tr>
+                        <td class="att-label">Weekend :</td>
+                        <td class="att-value"><input type="number" id="att_weekend" value="0"></td>
+                    </tr>
+                    <tr class="att-row-alt">
+                        <td class="att-label">Absent :</td>
+                        <td class="att-value"><input type="number" id="att_absent" value="0"></td>
+                    </tr>
+                    <tr>
+                        <td class="att-label">Absent List :</td>
+                        <td class="att-value"><input type="number" id="att_absentList" value="0"></td>
+                    </tr>
+                    <tr class="att-row-alt">
+                        <td class="att-label">On Training</td>
+                        <td class="att-value"><input type="number" id="att_onTraining" value="0"></td>
+                    </tr>
+                </table>
+
+                <table class="att-table" style="margin-top: -1px;">
+                    <colgroup>
+                        <col style="width: 22%;">
+                        <col style="width: 38%;">
+                        <col style="width: 28%;">
+                        <col style="width: 12%;">
+                    </colgroup>
+                    <tr class="att-thead">
+                        <td>DA ID</td>
+                        <td>DA Name</td>
+                        <td>Remarks</td>
+                        <td data-html2canvas-ignore="true"></td>
+                    </tr>
+                    <tbody id="attendanceRowsBody"></tbody>
+                </table>
+            </div>
+
+            <div class="action-toolbar-bottom" data-html2canvas-ignore="true">
+                <button type="button" onclick="closeAttendanceReportView()" class="btn-action btn-back-dashboard">
+                    <i class="fa-solid fa-arrow-left"></i>
+                    <span>Back to Dashboard</span>
+                </button>
+                <button type="button" id="btnAddAttendanceRow" onclick="addAttendanceRow()" class="btn-action btn-refresh">
+                    <i class="fa-solid fa-plus"></i>
+                    <span>Add Row</span>
+                </button>
+                <button type="button" id="btnAttendanceRefresh" class="btn-action btn-refresh">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+                    <span>Refresh Form</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ADD NEW SHEET MODAL -->
+    <div id="addSheetModal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-[#131d36] border border-slate-700 rounded-xl w-full max-w-md p-6 shadow-2xl relative">
+            <div class="flex items-center justify-between pb-4 border-b border-slate-800 mb-4">
+                <h3 class="text-lg font-bold text-white flex items-center gap-2" id="sheetModalTitle">
+                    <i class="fa-solid fa-file-excel text-emerald-400"></i> Add Task Sheet
+                </h3>
+                <button onclick="closeAddSheetModal()" class="text-slate-400 hover:text-white text-lg">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <form id="sheetForm" onsubmit="handleSaveSheet(event)" class="space-y-4">
+                <input type="hidden" id="sheetTargetType" value="morning">
+                <input type="hidden" id="sheetEditId" value="">
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 mb-1">Sheet Title</label>
+                    <input type="text" id="sheetTitleInput" required placeholder="e.g. Morning Dispatch Tracker" class="w-full bg-[#0b1329] text-sm text-slate-200 rounded-lg px-3 py-2 border border-slate-700 focus:outline-none focus:border-sky-500">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 mb-1">Sheet URL / Link</label>
+                    <input type="url" id="sheetUrlInput" required placeholder="https://docs.google.com/spreadsheets/d/..." class="w-full bg-[#0b1329] text-sm text-slate-200 rounded-lg px-3 py-2 border border-slate-700 focus:outline-none focus:border-sky-500">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 mb-1">Short Description / Note (Optional)</label>
+                    <input type="text" id="sheetDescInput" placeholder="e.g. Real-time agent attendance tracking" class="w-full bg-[#0b1329] text-sm text-slate-200 rounded-lg px-3 py-2 border border-slate-700 focus:outline-none focus:border-sky-500">
+                </div>
+
+                <div class="pt-3 flex items-center justify-end gap-3 border-t border-slate-800">
+                    <button type="button" onclick="closeAddSheetModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-lg transition">
+                        Cancel
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg transition">
+                        Save Sheet
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- HUB REPORT SUMMARY MODAL (DAILY / WEEKLY / MONTHLY) -->
+    <div id="hubSummaryModal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-[#131d36] border border-slate-700 rounded-xl w-full max-w-md p-6 shadow-2xl relative">
+            <div class="flex items-center justify-between pb-4 border-b border-slate-800 mb-4">
+                <h3 class="text-sm font-black text-white flex items-center gap-2" id="summaryModalHubName">
+                    <i class="fa-solid fa-chart-pie text-sky-400"></i> Hub Summary
+                </h3>
+                <button onclick="closeHubSummaryModal()" class="text-slate-400 hover:text-white text-lg">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="flex items-center gap-2 mb-3">
+                <button onclick="switchSummaryPeriod('daily')" id="summaryTabDaily" class="flex-1 px-3 py-2 rounded-lg text-xs font-bold transition bg-sky-600 text-white">Daily</button>
+                <button onclick="switchSummaryPeriod('weekly')" id="summaryTabWeekly" class="flex-1 px-3 py-2 rounded-lg text-xs font-bold transition text-slate-400 bg-slate-800 hover:text-white">Weekly</button>
+                <button onclick="switchSummaryPeriod('monthly')" id="summaryTabMonthly" class="flex-1 px-3 py-2 rounded-lg text-xs font-bold transition text-slate-400 bg-slate-800 hover:text-white">Monthly</button>
+                <button onclick="switchSummaryPeriod('custom')" id="summaryTabCustom" class="flex-1 px-3 py-2 rounded-lg text-xs font-bold transition text-slate-400 bg-slate-800 hover:text-white">Custom</button>
+            </div>
+
+            <div id="summaryCustomRange" class="hidden flex items-end gap-2 mb-3 bg-[#0b1329] border border-slate-800 rounded-lg p-3">
+                <div class="flex-1">
+                    <label class="block text-[10px] font-bold text-slate-400 mb-1">From</label>
+                    <input type="date" id="summaryCustomFrom" class="w-full bg-[#131d36] text-xs text-slate-200 rounded-lg px-2 py-1.5 border border-slate-700 focus:outline-none focus:border-sky-500">
+                </div>
+                <div class="flex-1">
+                    <label class="block text-[10px] font-bold text-slate-400 mb-1">To</label>
+                    <input type="date" id="summaryCustomTo" class="w-full bg-[#131d36] text-xs text-slate-200 rounded-lg px-2 py-1.5 border border-slate-700 focus:outline-none focus:border-sky-500">
+                </div>
+                <button onclick="applyCustomHubSummaryRange()" class="bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition">Apply</button>
+            </div>
+
+            <p class="text-[11px] text-slate-400 font-semibold mb-3" id="summaryPeriodLabel">Today's report</p>
+
+            <div id="summaryStatsGrid" class="grid grid-cols-2 gap-3"></div>
+
+            <div class="text-[10px] text-slate-500 font-medium text-center pt-3 mt-3 border-t border-slate-800/60" id="summaryReportCount"></div>
+        </div>
+    </div>
+
+    <!-- ALL-HUB CLUSTER SUMMARY MODAL (DAILY / WEEKLY / MONTHLY / CUSTOM) -->
+    <div id="clusterSummaryModal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-[#131d36] border border-slate-700 rounded-xl w-full max-w-2xl p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between pb-4 border-b border-slate-800 mb-4">
+                <h3 class="text-sm font-black text-white flex items-center gap-2">
+                    <i class="fa-solid fa-warehouse text-emerald-400"></i> Narsingdi Cluster - All Hub Summary
+                </h3>
+                <button onclick="closeClusterSummaryModal()" class="text-slate-400 hover:text-white text-lg">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="flex items-center gap-2 mb-3">
+                <button onclick="switchClusterSummaryPeriod('daily')" id="clusterSummaryTabDaily" class="flex-1 px-3 py-2 rounded-lg text-xs font-bold transition bg-emerald-600 text-white">Daily</button>
+                <button onclick="switchClusterSummaryPeriod('weekly')" id="clusterSummaryTabWeekly" class="flex-1 px-3 py-2 rounded-lg text-xs font-bold transition text-slate-400 bg-slate-800 hover:text-white">Weekly</button>
+                <button onclick="switchClusterSummaryPeriod('monthly')" id="clusterSummaryTabMonthly" class="flex-1 px-3 py-2 rounded-lg text-xs font-bold transition text-slate-400 bg-slate-800 hover:text-white">Monthly</button>
+                <button onclick="switchClusterSummaryPeriod('custom')" id="clusterSummaryTabCustom" class="flex-1 px-3 py-2 rounded-lg text-xs font-bold transition text-slate-400 bg-slate-800 hover:text-white">Custom</button>
+            </div>
+
+            <div id="clusterSummaryCustomRange" class="hidden flex items-end gap-2 mb-3 bg-[#0b1329] border border-slate-800 rounded-lg p-3">
+                <div class="flex-1">
+                    <label class="block text-[10px] font-bold text-slate-400 mb-1">From</label>
+                    <input type="date" id="clusterSummaryCustomFrom" class="w-full bg-[#131d36] text-xs text-slate-200 rounded-lg px-2 py-1.5 border border-slate-700 focus:outline-none focus:border-emerald-500">
+                </div>
+                <div class="flex-1">
+                    <label class="block text-[10px] font-bold text-slate-400 mb-1">To</label>
+                    <input type="date" id="clusterSummaryCustomTo" class="w-full bg-[#131d36] text-xs text-slate-200 rounded-lg px-2 py-1.5 border border-slate-700 focus:outline-none focus:border-emerald-500">
+                </div>
+                <button onclick="applyCustomClusterSummaryRange()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition">Apply</button>
+            </div>
+
+            <p class="text-[11px] text-slate-400 font-semibold mb-3" id="clusterSummaryPeriodLabel">Today's report</p>
+
+            <div id="clusterSummaryStatsGrid" class="grid grid-cols-2 md:grid-cols-3 gap-3 mb-5"></div>
+
+            <div class="border-t border-slate-800 pt-4">
+                <h4 class="text-xs font-black text-white mb-2 flex items-center gap-2">
+                    <i class="fa-solid fa-table-list text-sky-400"></i> Per-Hub Breakdown
+                </h4>
+                <div class="overflow-x-auto rounded-lg border border-slate-800">
+                    <table class="w-full text-xs">
+                        <thead>
+                            <tr class="bg-slate-800/60 text-slate-300">
+                                <th class="p-2 text-left font-bold">Hub</th>
+                                <th class="p-2 text-center font-bold">Volume</th>
+                                <th class="p-2 text-center font-bold">Delivered</th>
+                                <th class="p-2 text-center font-bold">Rate</th>
+                                <th class="p-2 text-center font-bold">Hold</th>
+                                <th class="p-2 text-center font-bold">Collection</th>
+                            </tr>
+                        </thead>
+                        <tbody id="clusterSummaryHubBreakdown"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="text-[10px] text-slate-500 font-medium text-center pt-3 mt-3 border-t border-slate-800/60" id="clusterSummaryReportCount"></div>
+        </div>
+    </div>
+
+    <!-- ADD NEW HUB MODAL -->
+    <div id="addHubModal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-[#131d36] border border-slate-700 rounded-xl w-full max-w-md p-6 shadow-2xl relative">
+            <div class="flex items-center justify-between pb-4 border-b border-slate-800 mb-4">
+                <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-plus-circle text-sky-400"></i> Add New Cluster Hub
+                </h3>
+                <button onclick="closeAddHubModal()" class="text-slate-400 hover:text-white text-lg">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <form id="addHubForm" onsubmit="handleAddHub(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 mb-1">Hub Name</label>
+                    <input type="text" id="newHubName" required placeholder="e.g. Raipura Hub" class="w-full bg-[#0b1329] text-sm text-slate-200 rounded-lg px-3 py-2 border border-slate-700 focus:outline-none focus:border-sky-500">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 mb-1">Hub Code / ID</label>
+                    <input type="text" id="newHubId" required placeholder="e.g. NRD-04" class="w-full bg-[#0b1329] text-sm text-slate-200 rounded-lg px-3 py-2 border border-slate-700 focus:outline-none focus:border-sky-500">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 mb-2">Reports to Enable for this Hub</label>
+                    <div class="space-y-2 bg-[#0b1329] border border-slate-700 rounded-lg p-3">
+                        <label class="flex items-center gap-2 text-xs text-slate-300 font-semibold cursor-pointer">
+                            <input type="checkbox" id="newHubReportMorning" checked class="w-4 h-4 rounded bg-[#0b1329] border-slate-600 text-sky-500 focus:ring-sky-500 focus:ring-offset-0">
+                            Morning &amp; Closing Report
+                        </label>
+                        <label class="flex items-center gap-2 text-xs text-slate-300 font-semibold cursor-pointer">
+                            <input type="checkbox" id="newHubReportSummary" checked class="w-4 h-4 rounded bg-[#0b1329] border-slate-600 text-sky-500 focus:ring-sky-500 focus:ring-offset-0">
+                            Summary
+                        </label>
+                        <label class="flex items-center gap-2 text-xs text-slate-300 font-semibold cursor-pointer">
+                            <input type="checkbox" id="newHubReportAttendance" checked class="w-4 h-4 rounded bg-[#0b1329] border-slate-600 text-sky-500 focus:ring-sky-500 focus:ring-offset-0">
+                            D.A. Attendance Report
+                        </label>
+                    </div>
+                </div>
+
+                <div class="pt-3 flex items-center justify-end gap-3 border-t border-slate-800">
+                    <button type="button" onclick="closeAddHubModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-lg transition">
+                        Cancel
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold rounded-lg transition">
+                        Add Hub
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- REMOVE HUB MODAL -->
+    <div id="removeHubModal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-[#131d36] border border-slate-700 rounded-xl w-full max-w-md p-6 shadow-2xl relative">
+            <div class="flex items-center justify-between pb-4 border-b border-slate-800 mb-4">
+                <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-trash-can text-rose-400"></i> Remove Cluster Hub
+                </h3>
+                <button onclick="closeRemoveHubModal()" class="text-slate-400 hover:text-white text-lg">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 mb-1">Select Hub to Remove</label>
+                    <select id="removeHubSelect" class="w-full bg-[#0b1329] text-sm text-slate-200 rounded-lg px-3 py-2 border border-slate-700 focus:outline-none focus:border-sky-500">
+                    </select>
+                </div>
+
+                <div class="pt-3 flex items-center justify-end gap-3 border-t border-slate-800">
+                    <button type="button" onclick="closeRemoveHubModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-lg transition">
+                        Cancel
+                    </button>
+                    <button type="button" onclick="handleRemoveHubSelect()" class="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold rounded-lg transition">
+                        Remove Hub
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ADMIN PANEL MODAL (USER & ACCESS MANAGEMENT) -->
+    <div id="adminPanelModal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-[#131d36] border border-slate-700 rounded-xl w-full max-w-2xl p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between pb-4 border-b border-slate-800 mb-4">
+                <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-user-shield text-sky-400"></i> User &amp; Hub Access Management
+                </h3>
+                <button onclick="closeAdminPanel()" class="text-slate-400 hover:text-white text-lg">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <form id="userForm" onsubmit="handleUserFormSubmit(event)" class="space-y-3 bg-[#0b1329] border border-slate-800 rounded-xl p-4">
+                <input type="hidden" id="uf_mode" value="add">
+                <input type="hidden" id="uf_originalUsername" value="">
+                <p class="text-xs font-black text-sky-400 uppercase tracking-wider" id="uf_formTitle">Add New User</p>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-400 mb-1">Full Name</label>
+                        <input type="text" id="uf_name" required placeholder="e.g. Rahim Uddin" class="w-full bg-[#131d36] text-sm text-slate-200 rounded-lg px-3 py-2 border border-slate-700 focus:outline-none focus:border-sky-500">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-400 mb-1">Username</label>
+                        <input type="text" id="uf_username" required placeholder="e.g. rahim" class="w-full bg-[#131d36] text-sm text-slate-200 rounded-lg px-3 py-2 border border-slate-700 focus:outline-none focus:border-sky-500">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-400 mb-1">Password</label>
+                        <input type="text" id="uf_password" required placeholder="Set a password" class="w-full bg-[#131d36] text-sm text-slate-200 rounded-lg px-3 py-2 border border-slate-700 focus:outline-none focus:border-sky-500">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-400 mb-1">Role</label>
+                        <select id="uf_role" onchange="toggleHubAccessVisibility()" class="w-full bg-[#131d36] text-sm text-slate-200 rounded-lg px-3 py-2 border border-slate-700 focus:outline-none focus:border-sky-500">
+                            <option value="user">User (Limited Hub Access)</option>
+                            <option value="admin">Admin (Full Access)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="uf_hubAccessBlock">
+                    <label class="block text-[10px] font-bold text-slate-400 mb-2">Hub Access (this user can EDIT these hubs' reports; all hubs remain viewable)</label>
+                    <div id="uf_hubCheckboxes" class="grid grid-cols-2 sm:grid-cols-3 gap-2 bg-[#131d36] border border-slate-700 rounded-lg p-3 max-h-36 overflow-y-auto"></div>
+                </div>
+
+                <div class="pt-2 flex items-center justify-end gap-3">
+                    <button type="button" onclick="resetUserForm()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-lg transition">
+                        Clear
+                    </button>
+                    <button type="submit" id="uf_submitBtn" class="px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold rounded-lg transition">
+                        <i class="fa-solid fa-plus"></i> Add User
+                    </button>
+                </div>
+            </form>
+
+            <div class="mt-5">
+                <p class="text-xs font-black text-slate-400 uppercase tracking-wider mb-2">Existing Users</p>
+                <div class="overflow-x-auto rounded-xl border border-slate-800">
+                    <table class="w-full text-xs">
+                        <thead>
+                            <tr class="bg-[#0b1329] text-slate-400">
+                                <th class="text-left font-bold px-3 py-2">Name</th>
+                                <th class="text-left font-bold px-3 py-2">Username</th>
+                                <th class="text-left font-bold px-3 py-2">Role</th>
+                                <th class="text-left font-bold px-3 py-2">Hub Access</th>
+                                <th class="text-right font-bold px-3 py-2">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="adminUsersTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    </div> <!-- /#appShell -->
+
+    <script>
+        let hubList = [
+            { 
+                id: 'NRD-01', 
+                name: 'Narsingdi Hub', 
+                type: 'PRIMARY HUB', 
+                totalVolume: 333, 
+                daPresent: 13, 
+                daTotal: 16, 
+                delivered: 271, 
+                totalHold: 61, 
+                collection: 145000, 
+                issues: 3, 
+                deliveryRate: '81.4%', 
+                status: 'Dispatched',
+                reports: ['report', 'summary', 'attendance']
+            },
+            { 
+                id: 'NRD-02', 
+                name: 'Monohardi Hub', 
+                type: 'REGIONAL HUB', 
+                totalVolume: 210, 
+                daPresent: 8, 
+                daTotal: 10, 
+                delivered: 185, 
+                totalHold: 20, 
+                collection: 98000, 
+                issues: 1, 
+                deliveryRate: '88.1%', 
+                status: 'Dispatched',
+                reports: ['report', 'summary', 'attendance']
+            },
+            { 
+                id: 'NRD-03', 
+                name: 'Shibpur Hub', 
+                type: 'SUB HUB', 
+                totalVolume: 145, 
+                daPresent: 6, 
+                daTotal: 7, 
+                delivered: 112, 
+                totalHold: 28, 
+                collection: 62000, 
+                issues: 4, 
+                deliveryRate: '77.2%', 
+                status: 'In Progress',
+                reports: ['report', 'summary', 'attendance']
+            }
+        ];
+
+        let taskSheets = {
+            morning: [
+                { id: 'm1', title: 'Morning Dispatch Sheet', url: 'https://docs.google.com/spreadsheets', desc: 'Daily parcel dispatch and DA distribution tracker' },
+                { id: 'm2', title: 'DA Attendance & Vehicle Log', url: 'https://docs.google.com/spreadsheets', desc: 'Morning rider presence and line haul arrival times' }
+            ],
+            evening: [
+                { id: 'e1', title: 'Evening Closing Report Sheet', url: 'https://docs.google.com/spreadsheets', desc: 'Daily cash reconciliation and hold breakdown' },
+                { id: 'e2', title: 'Pending Issues & IMS Tracker', url: 'https://docs.google.com/spreadsheets', desc: 'Field issues, NDR, and customer returns status' }
+            ],
+            agentOnboarding: []
+        };
+
+        let customNotices = [];
+        let activeHubId = null;
+
+        /* ===================== AUTH & ACCESS CONTROL ===================== */
+        const USERS_KEY = 'nrd_cluster_users';
+        const SESSION_KEY = 'nrd_cluster_current_user';
+        let currentUser = null;
+
+        function getUsers() {
+            let users = [];
+            try { users = JSON.parse(localStorage.getItem(USERS_KEY) || 'null'); } catch(e) { users = null; }
+            if (!Array.isArray(users) || users.length === 0) {
+                users = [{ username: 'admin', password: 'admin123', name: 'Cluster Admin', role: 'admin', hubAccess: [] }];
+                localStorage.setItem(USERS_KEY, JSON.stringify(users));
+            }
+            return users;
+        }
+        function saveUsers(users) { localStorage.setItem(USERS_KEY, JSON.stringify(users)); }
+        function isAdmin() { return !!(currentUser && currentUser.role === 'admin'); }
+        function canEditHub(hubId) {
+            if (!currentUser) return false;
+            if (currentUser.role === 'admin') return true;
+            return Array.isArray(currentUser.hubAccess) && currentUser.hubAccess.includes(hubId);
+        }
+
+        function initAuth() {
+            getUsers();
+            document.getElementById('loginForm').addEventListener('submit', handleLoginSubmit);
+
+            const savedUsername = localStorage.getItem(SESSION_KEY);
+            const users = getUsers();
+            const user = savedUsername ? users.find(u => u.username === savedUsername) : null;
+
+            if (user) {
+                currentUser = user;
+                showApp();
+            } else {
+                showLogin();
+            }
+        }
+
+        function handleLoginSubmit(event) {
+            event.preventDefault();
+            const uname = document.getElementById('loginUsername').value.trim();
+            const pass = document.getElementById('loginPassword').value;
+            const users = getUsers();
+            const user = users.find(u => u.username.toLowerCase() === uname.toLowerCase() && u.password === pass);
+
+            if (user) {
+                currentUser = user;
+                localStorage.setItem(SESSION_KEY, user.username);
+                document.getElementById('loginPassword').value = '';
+                showApp();
+                showToast(`Welcome, ${user.name}!`);
+            } else {
+                const errEl = document.getElementById('loginError');
+                errEl.querySelector('span').innerText = 'Invalid username or password.';
+                errEl.classList.remove('hidden');
+            }
+        }
+
+        function handleLogout() {
+            localStorage.removeItem(SESSION_KEY);
+            currentUser = null;
+            location.reload();
+        }
+
+        function showLogin() {
+            document.getElementById('appShell').classList.add('hidden');
+            document.getElementById('loginScreen').classList.remove('hidden');
+        }
+
+        function showApp() {
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('appShell').classList.remove('hidden');
+            document.getElementById('loginError').classList.add('hidden');
+
+            document.getElementById('sidebarUserName').innerText = currentUser.name || currentUser.username;
+            const roleBadge = document.getElementById('sidebarUserRole');
+            roleBadge.innerText = currentUser.role === 'admin' ? 'ADMIN' : 'USER';
+            roleBadge.className = 'role-badge ' + (currentUser.role === 'admin' ? 'role-admin' : 'role-user');
+            document.getElementById('sidebarAdminSection').classList.toggle('hidden', !isAdmin());
+
+            initDashboardAfterLogin();
+        }
+
+        /* ===================== ADMIN PANEL: USER MANAGEMENT ===================== */
+
+        function buildHubCheckboxes(selectedIds) {
+            selectedIds = selectedIds || [];
+            const box = document.getElementById('uf_hubCheckboxes');
+            if (hubList.length === 0) {
+                box.innerHTML = '<span class="text-[10px] text-slate-500 font-semibold col-span-full">No hubs available yet.</span>';
+                return;
+            }
+            box.innerHTML = hubList.map(h => `
+                <label class="flex items-center gap-2 text-[11px] text-slate-300 font-semibold cursor-pointer">
+                    <input type="checkbox" value="${h.id}" ${selectedIds.includes(h.id) ? 'checked' : ''} class="uf-hub-checkbox w-3.5 h-3.5 rounded bg-[#131d36] border-slate-600 text-sky-500 focus:ring-sky-500 focus:ring-offset-0">
+                    ${h.name}
+                </label>
+            `).join('');
+        }
+
+        function toggleHubAccessVisibility() {
+            const role = document.getElementById('uf_role').value;
+            document.getElementById('uf_hubAccessBlock').classList.toggle('hidden', role === 'admin');
+        }
+
+        function openAdminPanel() {
+            if (!isAdmin()) { showToast('Access denied. Admins only.'); return; }
+            resetUserForm();
+            renderAdminUsersTable();
+            document.getElementById('adminPanelModal').classList.remove('hidden');
+        }
+        function closeAdminPanel() {
+            document.getElementById('adminPanelModal').classList.add('hidden');
+        }
+
+        function resetUserForm() {
+            document.getElementById('userForm').reset();
+            document.getElementById('uf_mode').value = 'add';
+            document.getElementById('uf_originalUsername').value = '';
+            document.getElementById('uf_formTitle').innerText = 'Add New User';
+            document.getElementById('uf_submitBtn').innerHTML = '<i class="fa-solid fa-plus"></i> Add User';
+            document.getElementById('uf_role').value = 'user';
+            buildHubCheckboxes([]);
+            toggleHubAccessVisibility();
+        }
+
+        function editUser(username) {
+            const users = getUsers();
+            const user = users.find(u => u.username === username);
+            if (!user) return;
+
+            document.getElementById('uf_mode').value = 'edit';
+            document.getElementById('uf_originalUsername').value = user.username;
+            document.getElementById('uf_formTitle').innerText = `Edit User — ${user.name}`;
+            document.getElementById('uf_submitBtn').innerHTML = '<i class="fa-solid fa-check"></i> Save Changes';
+            document.getElementById('uf_name').value = user.name;
+            document.getElementById('uf_username').value = user.username;
+            document.getElementById('uf_password').value = user.password;
+            document.getElementById('uf_role').value = user.role;
+            buildHubCheckboxes(user.hubAccess || []);
+            toggleHubAccessVisibility();
+
+            document.getElementById('userForm').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        function deleteUser(username) {
+            if (username === currentUser.username) { showToast("You can't delete your own account while logged in."); return; }
+            const users = getUsers();
+            const target = users.find(u => u.username === username);
+            if (!target) return;
+            const adminCount = users.filter(u => u.role === 'admin').length;
+            if (target.role === 'admin' && adminCount <= 1) { showToast('At least one Admin account must remain.'); return; }
+            if (!confirm(`Remove user "${target.name}" (${target.username})? This cannot be undone.`)) return;
+
+            const updated = users.filter(u => u.username !== username);
+            saveUsers(updated);
+            renderAdminUsersTable();
+            showToast('User removed.');
+        }
+
+        function handleUserFormSubmit(event) {
+            event.preventDefault();
+            const mode = document.getElementById('uf_mode').value;
+            const originalUsername = document.getElementById('uf_originalUsername').value;
+            const name = document.getElementById('uf_name').value.trim();
+            const username = document.getElementById('uf_username').value.trim();
+            const password = document.getElementById('uf_password').value;
+            const role = document.getElementById('uf_role').value;
+            const hubAccess = Array.from(document.querySelectorAll('.uf-hub-checkbox:checked')).map(cb => cb.value);
+
+            if (!name || !username || !password) { showToast('Please fill in all fields.'); return; }
+
+            const users = getUsers();
+            const clash = users.find(u => u.username.toLowerCase() === username.toLowerCase() && u.username !== originalUsername);
+            if (clash) { showToast('This username is already taken.'); return; }
+
+            if (mode === 'add') {
+                users.push({ username, password, name, role, hubAccess });
+                saveUsers(users);
+                showToast(`User "${name}" added.`);
+            } else {
+                const idx = users.findIndex(u => u.username === originalUsername);
+                if (idx === -1) return;
+                const wasOnlyAdmin = users.filter(u => u.role === 'admin').length <= 1 && users[idx].role === 'admin';
+                if (wasOnlyAdmin && role !== 'admin') { showToast('At least one Admin account must remain.'); return; }
+
+                users[idx] = { username, password, name, role, hubAccess };
+                saveUsers(users);
+
+                if (originalUsername === currentUser.username) {
+                    currentUser = users[idx];
+                    localStorage.setItem(SESSION_KEY, currentUser.username);
+                    document.getElementById('sidebarUserName').innerText = currentUser.name;
+                    const roleBadge = document.getElementById('sidebarUserRole');
+                    roleBadge.innerText = currentUser.role === 'admin' ? 'ADMIN' : 'USER';
+                    roleBadge.className = 'role-badge ' + (currentUser.role === 'admin' ? 'role-admin' : 'role-user');
+                    document.getElementById('sidebarAdminSection').classList.toggle('hidden', !isAdmin());
+                }
+                showToast(`User "${name}" updated.`);
+            }
+
+            renderAdminUsersTable();
+            resetUserForm();
+        }
+
+        function renderAdminUsersTable() {
+            const body = document.getElementById('adminUsersTableBody');
+            const users = getUsers();
+            body.innerHTML = users.map(u => {
+                const hubChips = u.role === 'admin'
+                    ? '<span class="hub-chip">All Hubs</span>'
+                    : (u.hubAccess && u.hubAccess.length > 0
+                        ? u.hubAccess.map(id => {
+                            const h = hubList.find(x => x.id === id);
+                            return `<span class="hub-chip">${h ? h.name : id}</span>`;
+                        }).join(' ')
+                        : '<span class="text-slate-500 font-semibold text-[10px]">None</span>');
+
+                return `
+                    <tr class="border-b border-slate-800/60 hover:bg-slate-800/30">
+                        <td class="px-3 py-2 font-bold text-white">${u.name}</td>
+                        <td class="px-3 py-2 text-slate-300 font-mono text-[11px]">${u.username}</td>
+                        <td class="px-3 py-2"><span class="role-badge ${u.role === 'admin' ? 'role-admin' : 'role-user'}">${u.role}</span></td>
+                        <td class="px-3 py-2"><div class="flex flex-wrap gap-1">${hubChips}</div></td>
+                        <td class="px-3 py-2 text-right">
+                            <button onclick="editUser('${u.username}')" class="text-sky-400 hover:text-sky-300 p-1 mr-1" title="Edit"><i class="fa-solid fa-pen-to-square"></i></button>
+                            <button onclick="deleteUser('${u.username}')" class="text-rose-400 hover:text-rose-300 p-1" title="Remove"><i class="fa-solid fa-trash-can"></i></button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        /* ===================== MAIN UI CONTROLLERS ===================== */
+
+        function initDashboardAfterLogin() {
+            loadStoredState();
+            updateClock();
+            setInterval(updateClock, 1000);
+            renderHubCards();
+            renderTaskSheets();
+            renderMatrix();
+            renderLeaderboard();
+            updateKPIs();
+            renderNotices();
+            bindFormCalculations();
+        }
+
+        function loadStoredState() {
+            try {
+                const savedHubs = localStorage.getItem('nrd_cluster_hubs');
+                if (savedHubs) hubList = JSON.parse(savedHubs);
+                const savedSheets = localStorage.getItem('nrd_cluster_sheets');
+                if (savedSheets) taskSheets = JSON.parse(savedSheets);
+                const savedNotices = localStorage.getItem('nrd_cluster_notices');
+                if (savedNotices) customNotices = JSON.parse(savedNotices);
+            } catch(e) { console.error(e); }
+        }
+
+        function saveState() {
+            localStorage.setItem('nrd_cluster_hubs', JSON.stringify(hubList));
+            localStorage.setItem('nrd_cluster_sheets', JSON.stringify(taskSheets));
+            localStorage.setItem('nrd_cluster_notices', JSON.stringify(customNotices));
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toastNotify');
+            document.getElementById('toastMsg').innerText = msg;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('lastUpdatedTime').innerText = now.toLocaleTimeString();
+        }
+
+        function toggleSidebar() {
+            const drawer = document.getElementById('sidebarDrawer');
+            const overlay = document.getElementById('sidebarOverlay');
+            const isHidden = drawer.classList.contains('-translate-x-full');
+
+            if (isHidden) {
+                drawer.classList.remove('-translate-x-full');
+                overlay.classList.remove('hidden');
+            } else {
+                drawer.classList.add('-translate-x-full');
+                overlay.classList.add('hidden');
+            }
+        }
+
+        function switchDashboardTab(tab) {
+            ['viewOverview', 'viewMorningTasks', 'viewEveningTasks', 'viewAgentOnboarding', 'viewMatrix', 'viewLeaderboard'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.classList.add('hidden');
+            });
+
+            if (tab === 'overview') document.getElementById('viewOverview').classList.remove('hidden');
+            if (tab === 'morningTasks') document.getElementById('viewMorningTasks').classList.remove('hidden');
+            if (tab === 'eveningTasks') document.getElementById('viewEveningTasks').classList.remove('hidden');
+            if (tab === 'agentOnboarding') document.getElementById('viewAgentOnboarding').classList.remove('hidden');
+            if (tab === 'matrix') { renderMatrix(); document.getElementById('viewMatrix').classList.remove('hidden'); }
+            if (tab === 'leaderboard') { renderLeaderboard(); document.getElementById('viewLeaderboard').classList.remove('hidden'); }
+        }
+
+        /* ===================== RENDERING MODULES ===================== */
+
+        function renderHubCards() {
+            const grid = document.getElementById('hubCardsGrid');
+            grid.innerHTML = hubList.map(h => `
+                <div class="bg-[#131d36] border border-slate-800 rounded-2xl p-5 shadow-xl hover:border-sky-700/60 transition flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between mb-3 pb-3 border-b border-slate-800">
+                            <div>
+                                <span class="text-[10px] font-bold text-sky-400 uppercase tracking-widest block">${h.type}</span>
+                                <h3 class="text-lg font-black text-white mt-0.5">${h.name}</h3>
+                            </div>
+                            <span class="px-2.5 py-1 rounded-full text-[10px] font-black uppercase ${h.status === 'Dispatched' ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' : 'bg-amber-950 text-amber-400 border border-amber-800'}">
+                                ${h.status}
+                            </span>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3 mb-4 text-xs">
+                            <div class="bg-[#0b1329] p-2.5 rounded-xl border border-slate-800">
+                                <span class="text-slate-400 text-[10px] font-bold uppercase block">Volume</span>
+                                <span class="text-white font-black text-sm">${h.totalVolume}</span>
+                            </div>
+                            <div class="bg-[#0b1329] p-2.5 rounded-xl border border-slate-800">
+                                <span class="text-slate-400 text-[10px] font-bold uppercase block">Delivery Rate</span>
+                                <span class="text-emerald-400 font-black text-sm">${h.deliveryRate}</span>
+                            </div>
+                            <div class="bg-[#0b1329] p-2.5 rounded-xl border border-slate-800">
+                                <span class="text-slate-400 text-[10px] font-bold uppercase block">DA Present</span>
+                                <span class="text-white font-black text-sm">${h.daPresent} / ${h.daTotal}</span>
+                            </div>
+                            <div class="bg-[#0b1329] p-2.5 rounded-xl border border-slate-800">
+                                <span class="text-slate-400 text-[10px] font-bold uppercase block">Collection</span>
+                                <span class="text-amber-400 font-black text-sm">৳ ${h.collection.toLocaleString()}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-2 pt-3 border-t border-slate-800">
+                        <button onclick="openReportView('${h.id}')" class="flex-1 bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs py-2 rounded-lg transition flex items-center justify-center gap-1.5 shadow-md">
+                            <i class="fa-solid fa-file-invoice"></i> Reports
+                        </button>
+                        <button onclick="openAttendanceReportView('${h.id}')" class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs py-2 rounded-lg transition flex items-center justify-center gap-1.5 shadow-md">
+                            <i class="fa-solid fa-clipboard-user"></i> Attendance
+                        </button>
+                        <button onclick="openHubSummaryModal('${h.id}')" class="bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs p-2 rounded-lg transition" title="Hub Summary">
+                            <i class="fa-solid fa-chart-pie"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function updateKPIs() {
+            document.getElementById('totalHubsCount').innerText = `${hubList.length} Hubs`;
+            
+            const totalVol = hubList.reduce((acc, h) => acc + h.totalVolume, 0);
+            const totalDel = hubList.reduce((acc, h) => acc + h.delivered, 0);
+            const rate = totalVol > 0 ? ((totalDel / totalVol) * 100).toFixed(1) : '0.0';
+            document.getElementById('clusterDeliveryRate').innerText = `${rate}%`;
+
+            const activeDA = hubList.reduce((acc, h) => acc + h.daPresent, 0);
+            const totalDA = hubList.reduce((acc, h) => acc + h.daTotal, 0);
+            document.getElementById('clusterTotalDA').innerText = `${activeDA} / ${totalDA} DA`;
+
+            const totalColl = hubList.reduce((acc, h) => acc + h.collection, 0);
+            document.getElementById('clusterTotalCollection').innerText = `৳ ${totalColl.toLocaleString()}`;
+        }
+
+        function renderNotices() {
+            const container = document.getElementById('customNoticesStack');
+            if (customNotices.length === 0) {
+                container.innerHTML = '';
+                document.getElementById('noNoticesMsg').classList.remove('hidden');
+                return;
+            }
+            document.getElementById('noNoticesMsg').classList.add('hidden');
+
+            container.innerHTML = customNotices.map((n, i) => {
+                const color = n.severity === 'critical' ? 'rose' : n.severity === 'warning' ? 'amber' : 'sky';
+                return `
+                    <div class="bg-[#0b1329] border border-${color}-800/60 rounded-xl p-3 flex items-start justify-between gap-3 shadow-md">
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <span class="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-${color}-500/20 text-${color}-400 border border-${color}-500/30">${n.severity}</span>
+                                <h4 class="text-xs font-bold text-white">${n.title}</h4>
+                            </div>
+                            <p class="text-xs text-slate-300 mt-1 font-medium">${n.message}</p>
+                        </div>
+                        <button onclick="removeNotice(${i})" class="text-slate-500 hover:text-rose-400 text-xs p-1"><i class="fa-solid fa-xmark"></i></button>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderTaskSheets() {
+            const renderGrid = (items, targetId, type) => {
+                const grid = document.getElementById(targetId);
+                if (items.length === 0) {
+                    grid.innerHTML = '<div class="col-span-full text-center py-6 text-slate-500 text-xs font-bold">No task sheets added yet.</div>';
+                    return;
+                }
+                grid.innerHTML = items.map(s => `
+                    <div class="bg-[#0b1329] border border-slate-800 rounded-xl p-4 flex flex-col justify-between shadow-md">
+                        <div>
+                            <h3 class="text-sm font-bold text-white flex items-center justify-between">
+                                <span>${s.title}</span>
+                                <a href="${s.url}" target="_blank" class="text-sky-400 hover:text-sky-300 text-xs"><i class="fa-solid fa-external-link"></i></a>
+                            </h3>
+                            <p class="text-xs text-slate-400 mt-1">${s.desc || 'Operational workflow sheet.'}</p>
+                        </div>
+                        <div class="flex items-center justify-end gap-2 mt-4 pt-2 border-t border-slate-800/60">
+                            <button onclick="openAddSheetModal('${type}', '${s.id}')" class="text-slate-400 hover:text-white text-xs"><i class="fa-solid fa-pen"></i> Edit</button>
+                            <button onclick="deleteSheet('${type}', '${s.id}')" class="text-rose-400 hover:text-rose-300 text-xs"><i class="fa-solid fa-trash"></i> Delete</button>
+                        </div>
+                    </div>
+                `).join('');
+            };
+
+            renderGrid(taskSheets.morning, 'morningSheetsGrid', 'morning');
+            renderGrid(taskSheets.evening, 'eveningSheetsGrid', 'evening');
+            renderGrid(taskSheets.agentOnboarding, 'agentOnboardingSheetsGrid', 'agentOnboarding');
+        }
+
+        function renderMatrix() {
+            const body = document.getElementById('consolidatedMatrixBody');
+            const footer = document.getElementById('consolidatedMatrixFooter');
+
+            body.innerHTML = hubList.map(h => `
+                <tr class="hover:bg-slate-800/40 border-b border-slate-800/60">
+                    <td class="p-3 font-bold text-white">${h.name} <span class="text-[10px] text-slate-500 font-mono">(${h.id})</span></td>
+                    <td class="p-3 text-center text-slate-200">${h.daPresent} / ${h.daTotal}</td>
+                    <td class="p-3 text-center text-slate-200">${h.totalVolume}</td>
+                    <td class="p-3 text-center text-emerald-400 font-bold">${h.delivered}</td>
+                    <td class="p-3 text-center font-bold text-sky-400">${h.deliveryRate}</td>
+                    <td class="p-3 text-center text-amber-400">${h.totalHold}</td>
+                    <td class="p-3 text-center text-emerald-400 font-mono">৳ ${h.collection.toLocaleString()}</td>
+                    <td class="p-3 text-center text-rose-400">${h.issues}</td>
+                </tr>
+            `).join('');
+
+            const totVol = hubList.reduce((a, b) => a + b.totalVolume, 0);
+            const totDel = hubList.reduce((a, b) => a + b.delivered, 0);
+            const totHold = hubList.reduce((a, b) => a + b.totalHold, 0);
+            const totColl = hubList.reduce((a, b) => a + b.collection, 0);
+            const totIss = hubList.reduce((a, b) => a + b.issues, 0);
+            const avgRate = totVol > 0 ? ((totDel / totVol) * 100).toFixed(1) + '%' : '0%';
+
+            footer.innerHTML = `
+                <td class="p-3">Cluster Total</td>
+                <td class="p-3 text-center">${hubList.reduce((a, b) => a + b.daPresent, 0)} Active</td>
+                <td class="p-3 text-center">${totVol}</td>
+                <td class="p-3 text-center text-emerald-400">${totDel}</td>
+                <td class="p-3 text-center text-sky-400">${avgRate}</td>
+                <td class="p-3 text-center text-amber-400">${totHold}</td>
+                <td class="p-3 text-center text-emerald-400">৳ ${totColl.toLocaleString()}</td>
+                <td class="p-3 text-center text-rose-400">${totIss}</td>
+            `;
+        }
+
+        function renderLeaderboard() {
+            const grid = document.getElementById('leaderboardGrid');
+            const sorted = [...hubList].sort((a, b) => parseFloat(b.deliveryRate) - parseFloat(a.deliveryRate));
+
+            grid.innerHTML = sorted.map((h, i) => `
+                <div class="bg-[#0b1329] border border-slate-800 rounded-xl p-4 relative overflow-hidden shadow-lg">
+                    <div class="absolute -right-3 -top-3 w-12 h-12 rounded-full ${i === 0 ? 'bg-amber-500/20 text-amber-400' : 'bg-slate-800 text-slate-400'} flex items-center justify-center font-black text-sm">
+                        #${i + 1}
+                    </div>
+                    <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">${h.id}</span>
+                    <h3 class="text-base font-black text-white mt-0.5">${h.name}</h3>
+                    
+                    <div class="mt-4 space-y-2">
+                        <div class="flex justify-between text-xs">
+                            <span class="text-slate-400 font-semibold">Delivery Performance</span>
+                            <span class="text-emerald-400 font-bold">${h.deliveryRate}</span>
+                        </div>
+                        <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                            <div class="bg-emerald-500 h-full rounded-full" style="width: ${h.deliveryRate}"></div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2 mt-4 text-[11px] pt-3 border-t border-slate-800/80">
+                        <div>
+                            <span class="text-slate-500 block">Avg DA Output</span>
+                            <span class="text-white font-bold">${h.daPresent > 0 ? (h.delivered / h.daPresent).toFixed(1) : 0} parcels/DA</span>
+                        </div>
+                        <div>
+                            <span class="text-slate-500 block">Collection</span>
+                            <span class="text-amber-400 font-bold">৳ ${(h.collection / 1000).toFixed(1)}k</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        /* ===================== MODAL & ACTION HANDLERS ===================== */
+
+        function openAddNoticeModal() { document.getElementById('addNoticeModal').classList.remove('hidden'); }
+        function closeAddNoticeModal() { document.getElementById('addNoticeModal').classList.add('hidden'); }
+
+        function handleSaveNotice(e) {
+            e.preventDefault();
+            const title = document.getElementById('noticeTitleInput').value.trim();
+            const message = document.getElementById('noticeMessageInput').value.trim();
+            const severity = document.getElementById('noticeSeverityInput').value;
+
+            customNotices.unshift({ title, message, severity });
+            saveState();
+            renderNotices();
+            closeAddNoticeModal();
+            document.getElementById('noticeForm').reset();
+            showToast('Notice published.');
+        }
+
+        function removeNotice(index) {
+            customNotices.splice(index, 1);
+            saveState();
+            renderNotices();
+            showToast('Notice removed.');
+        }
+
+        function openAddSheetModal(type, editId = null) {
+            document.getElementById('sheetTargetType').value = type;
+            document.getElementById('sheetEditId').value = editId || '';
+            document.getElementById('sheetForm').reset();
+
+            if (editId) {
+                const sheet = taskSheets[type].find(s => s.id === editId);
+                if (sheet) {
+                    document.getElementById('sheetTitleInput').value = sheet.title;
+                    document.getElementById('sheetUrlInput').value = sheet.url;
+                    document.getElementById('sheetDescInput').value = sheet.desc || '';
+                }
+            }
+            document.getElementById('addSheetModal').classList.remove('hidden');
+        }
+
+        function closeAddSheetModal() { document.getElementById('addSheetModal').classList.add('hidden'); }
+
+        function handleSaveSheet(e) {
+            e.preventDefault();
+            const type = document.getElementById('sheetTargetType').value;
+            const editId = document.getElementById('sheetEditId').value;
+            const title = document.getElementById('sheetTitleInput').value.trim();
+            const url = document.getElementById('sheetUrlInput').value.trim();
+            const desc = document.getElementById('sheetDescInput').value.trim();
+
+            if (editId) {
+                const idx = taskSheets[type].findIndex(s => s.id === editId);
+                if (idx !== -1) taskSheets[type][idx] = { id: editId, title, url, desc };
+            } else {
+                taskSheets[type].push({ id: 's_' + Date.now(), title, url, desc });
+            }
+
+            saveState();
+            renderTaskSheets();
+            closeAddSheetModal();
+            showToast('Sheet saved.');
+        }
+
+        function deleteSheet(type, id) {
+            taskSheets[type] = taskSheets[type].filter(s => s.id !== id);
+            saveState();
+            renderTaskSheets();
+            showToast('Sheet deleted.');
+        }
+
+        function openHubOverviewModal() {
+            filterHubs();
+            document.getElementById('hubOverviewTableModal').classList.remove('hidden');
+        }
+        function closeHubOverviewModal() { document.getElementById('hubOverviewTableModal').classList.add('hidden'); }
+
+        function filterHubs() {
+            const query = (document.getElementById('searchInput').value || '').toLowerCase();
+            const filtered = hubList.filter(h => h.name.toLowerCase().includes(query) || h.id.toLowerCase().includes(query));
+            
+            document.getElementById('clusterOverviewTableBody').innerHTML = filtered.map(h => `
+                <tr class="hover:bg-slate-800/40 border-b border-slate-800/60">
+                    <td class="p-3 font-bold text-white">${h.name} <span class="text-[10px] text-slate-500">(${h.id})</span></td>
+                    <td class="p-3 text-center text-slate-400 font-bold">${h.type}</td>
+                    <td class="p-3 text-center text-slate-200 font-bold">${h.totalVolume}</td>
+                    <td class="p-3 text-center text-slate-200">${h.daPresent} / ${h.daTotal}</td>
+                    <td class="p-3 text-center text-emerald-400 font-bold">${h.deliveryRate}</td>
+                    <td class="p-3 text-center text-amber-400 font-bold">${h.totalHold}</td>
+                    <td class="p-3 text-center"><span class="px-2 py-0.5 rounded text-[9px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-800">${h.status}</span></td>
+                </tr>
+            `).join('');
+        }
+
+        function openAddHubModal() { document.getElementById('addHubModal').classList.remove('hidden'); }
+        function closeAddHubModal() { document.getElementById('addHubModal').classList.add('hidden'); }
+
+        function handleAddHub(e) {
+            e.preventDefault();
+            const name = document.getElementById('newHubName').value.trim();
+            const id = document.getElementById('newHubId').value.trim().toUpperCase();
+
+            if (hubList.some(h => h.id === id)) { showToast('Hub Code already exists!'); return; }
+
+            hubList.push({
+                id, name, type: 'SUB HUB', totalVolume: 0, daPresent: 0, daTotal: 0,
+                delivered: 0, totalHold: 0, collection: 0, issues: 0, deliveryRate: '0.0%',
+                status: 'In Progress', reports: ['report', 'summary', 'attendance']
+            });
+
+            saveState();
+            renderHubCards();
+            updateKPIs();
+            closeAddHubModal();
+            document.getElementById('addHubForm').reset();
+            showToast(`Hub ${name} added.`);
+        }
+
+        function openRemoveHubModal() {
+            const select = document.getElementById('removeHubSelect');
+            select.innerHTML = hubList.map(h => `<option value="${h.id}">${h.name} (${h.id})</option>`).join('');
+            document.getElementById('removeHubModal').classList.remove('hidden');
+        }
+        function closeRemoveHubModal() { document.getElementById('removeHubModal').classList.add('hidden'); }
+
+        function handleRemoveHubSelect() {
+            const id = document.getElementById('removeHubSelect').value;
+            hubList = hubList.filter(h => h.id !== id);
+            saveState();
+            renderHubCards();
+            updateKPIs();
+            closeRemoveHubModal();
+            showToast('Hub removed.');
+        }
+
+        /* ===================== REPORT VIEWS & FORM CALCULATIONS ===================== */
+
+        function openReportView(hubId) {
+            activeHubId = hubId;
+            const hub = hubList.find(h => h.id === hubId);
+            if (!hub) return;
+
+            const editable = canEditHub(hubId);
+            document.getElementById('hubReportViewOnlyBanner').classList.toggle('hidden', editable);
+            document.getElementById('morningHeaderTitle').innerText = `${hub.name.toUpperCase()} - MORNING DISPATCH REPORT`;
+            document.getElementById('closingHeaderTitle').innerText = `${hub.name.toUpperCase()} - CLOSING REPORT`;
+
+            document.getElementById('m_reportDate').value = new Date().toLocaleDateString('en-GB');
+            document.getElementById('hubDashboardView').classList.add('hidden');
+            document.getElementById('hubReportView').classList.remove('hidden');
+            calculateReport();
+        }
+
+        function closeReportView() {
+            document.getElementById('hubReportView').classList.add('hidden');
+            document.getElementById('hubDashboardView').classList.remove('hidden');
+        }
+
+        function bindFormCalculations() {
+            const morningInputs = ['m_totalDA', 'm_presentDA', 'm_onTrainingDA', 'm_age1', 'm_age2', 'm_age3', 'm_age4', 'm_totalHubIC', 'm_presentHubIC', 'm_prevHold', 'm_reattemptReq', 'm_recParcel', 'm_areaChange', 'm_officeHold', 'm_capShort'];
+            morningInputs.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.addEventListener('input', calculateReport);
+            });
+
+            const closingInputs = ['age24_qty', 'age48_qty', 'age72_qty', 'age72p_qty', 'delivered', 'fieldHold', 'fieldReturn', 'totalIssue', 'totalSolved', 'pickedMerchant', 'pickedParcel'];
+            closingInputs.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.addEventListener('input', calculateReport);
+            });
+        }
+
+        function calculateReport() {
+            const getVal = id => parseFloat(document.getElementById(id)?.value) || 0;
+            const setTxt = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
+
+            const totalDA = getVal('m_totalDA');
+            const presentDA = getVal('m_presentDA');
+            const absentDA = Math.max(0, totalDA - presentDA);
+            setTxt('m_presentDAPct', totalDA > 0 ? ((presentDA / totalDA) * 100).toFixed(1) + '%' : '0%');
+            setTxt('m_absentDA', absentDA);
+            setTxt('m_absentDAPct', totalDA > 0 ? ((absentDA / totalDA) * 100).toFixed(1) + '%' : '0%');
+
+            const prevHold = getVal('m_prevHold');
+            const reattempt = getVal('m_reattemptReq');
+            const recParcel = getVal('m_recParcel');
+            const areaChange = getVal('m_areaChange');
+            const officeHold = getVal('m_officeHold');
+            const capShort = getVal('m_capShort');
+
+            const totalParcels = prevHold + reattempt + recParcel + areaChange;
+            const totalAssign = Math.max(0, totalParcels - officeHold - capShort);
+
+            setTxt('m_totalParcels', totalParcels);
+            setTxt('m_totalAssign', totalAssign);
+            setTxt('kpiTotalParcels', totalParcels);
+            setTxt('kpiAssignRate', totalParcels > 0 ? ((totalAssign / totalParcels) * 100).toFixed(1) + '%' : '0%');
+            setTxt('kpiDaAttendance', totalDA > 0 ? ((presentDA / totalDA) * 100).toFixed(1) + '%' : '0%');
+
+            document.getElementById('prevHold').value = prevHold + reattempt;
+            document.getElementById('recParcel').value = recParcel;
+            document.getElementById('areaChange').value = areaChange;
+            document.getElementById('officeHoldReason').value = officeHold;
+            document.getElementById('capShortage').value = capShort;
+
+            const delivered = getVal('delivered');
+            const fieldHold = getVal('fieldHold');
+            const fieldReturn = getVal('fieldReturn');
+            const totalAttempt = totalParcels - officeHold - capShort;
+
+            setTxt('totalAttempt', totalAttempt);
+            document.getElementById('totalDeliveredDisplay').value = delivered;
+            setTxt('totalDeliveredPct', totalAttempt > 0 ? ((delivered / totalAttempt) * 100).toFixed(1) + '%' : '0%');
+
+            const totHold = fieldHold + officeHold;
+            setTxt('totalHold', totHold);
+            setTxt('totalHoldPct', totalAttempt > 0 ? ((totHold / totalAttempt) * 100).toFixed(1) + '%' : '0%');
+
+            setTxt('currentCapPerAgent', presentDA > 0 ? Math.round(totalAssign / presentDA) : 0);
+            setTxt('agentProductivity', presentDA > 0 ? Math.round(delivered / presentDA) : 0);
+
+            if (activeHubId) {
+                const h = hubList.find(x => x.id === activeHubId);
+                if (h) {
+                    h.totalVolume = totalParcels;
+                    h.delivered = delivered;
+                    h.daPresent = presentDA;
+                    h.daTotal = totalDA;
+                    h.totalHold = totHold;
+                    h.deliveryRate = totalAttempt > 0 ? ((delivered / totalAttempt) * 100).toFixed(1) + '%' : '0.0%';
+                    saveState();
+                    renderHubCards();
+                    updateKPIs();
+                }
+            }
+        }
+
+        /* ===================== ATTENDANCE MODULE ===================== */
+
+        function openAttendanceReportView(hubId) {
+            activeHubId = hubId;
+            const hub = hubList.find(h => h.id === hubId);
+            if (!hub) return;
+
+            document.getElementById('att_hubNameDisplay').innerText = hub.name;
+            document.getElementById('att_reportDate').value = new Date().toLocaleDateString('en-GB');
+            document.getElementById('att_totalDA').value = hub.daTotal;
+
+            const tbody = document.getElementById('attendanceRowsBody');
+            tbody.innerHTML = '';
+            for (let i = 1; i <= Math.min(hub.daTotal, 5); i++) {
+                addAttendanceRow(`DA-${100 + i}`, `Agent ${i}`);
+            }
+
+            document.getElementById('hubDashboardView').classList.add('hidden');
+            document.getElementById('attendanceReportView').classList.remove('hidden');
+            calculateAttendance();
+        }
+
+        function closeAttendanceReportView() {
+            document.getElementById('attendanceReportView').classList.add('hidden');
+            document.getElementById('hubDashboardView').classList.remove('hidden');
+        }
+
+        function addAttendanceRow(id = '', name = '') {
+            const tbody = document.getElementById('attendanceRowsBody');
+            const tr = document.createElement('tr');
+            tr.className = 'att-da-row';
+            tr.innerHTML = `
+                <td><input type="text" value="${id}" placeholder="ID"></td>
+                <td><input type="text" value="${name}" placeholder="Name"></td>
+                <td><input type="text" placeholder="Remarks"></td>
+                <td data-html2canvas-ignore="true" class="text-center">
+                    <button onclick="this.closest('tr').remove(); calculateAttendance();" class="att-remove-btn"><i class="fa-solid fa-trash"></i></button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+            calculateAttendance();
+        }
+
+        function calculateAttendance() {
+            const total = parseFloat(document.getElementById('att_totalDA').value) || 0;
+            const rows = document.querySelectorAll('#attendanceRowsBody tr').length;
+            const weekend = parseFloat(document.getElementById('att_weekend').value) || 0;
+            const absent = parseFloat(document.getElementById('att_absent').value) || 0;
+
+            const present = Math.max(0, rows - absent - weekend);
+            document.getElementById('att_present').value = present;
+        }
+
+        /* ===================== SUMMARY MODALS ===================== */
+
+        function openHubSummaryModal(hubId) {
+            activeHubId = hubId;
+            const hub = hubList.find(h => h.id === hubId);
+            if (!hub) return;
+
+            document.getElementById('summaryModalHubName').innerText = `${hub.name} Summary`;
+            renderHubSummaryStats(hub);
+            document.getElementById('hubSummaryModal').classList.remove('hidden');
+        }
+
+        function closeHubSummaryModal() { document.getElementById('hubSummaryModal').classList.add('hidden'); }
+
+        function renderHubSummaryStats(hub) {
+            const grid = document.getElementById('summaryStatsGrid');
+            grid.innerHTML = `
+                <div class="bg-[#0b1329] p-3 rounded-lg border border-slate-800">
+                    <span class="text-[10px] text-slate-400 font-bold uppercase block">Total Volume</span>
+                    <span class="text-sm font-black text-white">${hub.totalVolume}</span>
+                </div>
+                <div class="bg-[#0b1329] p-3 rounded-lg border border-slate-800">
+                    <span class="text-[10px] text-slate-400 font-bold uppercase block">Delivered</span>
+                    <span class="text-sm font-black text-emerald-400">${hub.delivered}</span>
+                </div>
+                <div class="bg-[#0b1329] p-3 rounded-lg border border-slate-800">
+                    <span class="text-[10px] text-slate-400 font-bold uppercase block">Delivery Rate</span>
+                    <span class="text-sm font-black text-sky-400">${hub.deliveryRate}</span>
+                </div>
+                <div class="bg-[#0b1329] p-3 rounded-lg border border-slate-800">
+                    <span class="text-[10px] text-slate-400 font-bold uppercase block">Total Collection</span>
+                    <span class="text-sm font-black text-amber-400">৳ ${hub.collection.toLocaleString()}</span>
+                </div>
+            `;
+        }
+
+        function switchSummaryPeriod(period) {
+            ['summaryTabDaily', 'summaryTabWeekly', 'summaryTabMonthly', 'summaryTabCustom'].forEach(id => {
+                document.getElementById(id).className = 'flex-1 px-3 py-2 rounded-lg text-xs font-bold transition text-slate-400 bg-slate-800 hover:text-white';
+            });
+            const activeBtn = document.getElementById('summaryTab' + period.charAt(0).toUpperCase() + period.slice(1));
+            if (activeBtn) activeBtn.className = 'flex-1 px-3 py-2 rounded-lg text-xs font-bold transition bg-sky-600 text-white';
+
+            document.getElementById('summaryCustomRange').classList.toggle('hidden', period !== 'custom');
+            document.getElementById('summaryPeriodLabel').innerText = `${period.toUpperCase()} Performance Overview`;
+        }
+
+        function openClusterSummaryModal() {
+            renderClusterSummaryStats();
+            document.getElementById('clusterSummaryModal').classList.remove('hidden');
+        }
+
+        function closeClusterSummaryModal() { document.getElementById('clusterSummaryModal').classList.add('hidden'); }
+
+        function renderClusterSummaryStats() {
+            const totVol = hubList.reduce((a, b) => a + b.totalVolume, 0);
+            const totDel = hubList.reduce((a, b) => a + b.delivered, 0);
+            const totColl = hubList.reduce((a, b) => a + b.collection, 0);
+            const avgRate = totVol > 0 ? ((totDel / totVol) * 100).toFixed(1) + '%' : '0%';
+
+            document.getElementById('clusterSummaryStatsGrid').innerHTML = `
+                <div class="bg-[#0b1329] p-3 rounded-lg border border-slate-800">
+                    <span class="text-[10px] text-slate-400 font-bold uppercase block">Total Volume</span>
+                    <span class="text-sm font-black text-white">${totVol}</span>
+                </div>
+                <div class="bg-[#0b1329] p-3 rounded-lg border border-slate-800">
+                    <span class="text-[10px] text-slate-400 font-bold uppercase block">Delivered</span>
+                    <span class="text-sm font-black text-emerald-400">${totDel}</span>
+                </div>
+                <div class="bg-[#0b1329] p-3 rounded-lg border border-slate-800">
+                    <span class="text-[10px] text-slate-400 font-bold uppercase block">Avg Rate</span>
+                    <span class="text-sm font-black text-sky-400">${avgRate}</span>
+                </div>
+                <div class="bg-[#0b1329] p-3 rounded-lg border border-slate-800 col-span-2 md:col-span-3">
+                    <span class="text-[10px] text-slate-400 font-bold uppercase block">Total Collection</span>
+                    <span class="text-base font-black text-amber-400">৳ ${totColl.toLocaleString()}</span>
+                </div>
+            `;
+
+            document.getElementById('clusterSummaryHubBreakdown').innerHTML = hubList.map(h => `
+                <tr class="border-b border-slate-800/60">
+                    <td class="p-2 font-bold text-white">${h.name}</td>
+                    <td class="p-2 text-center text-slate-300">${h.totalVolume}</td>
+                    <td class="p-2 text-center text-emerald-400 font-bold">${h.delivered}</td>
+                    <td class="p-2 text-center text-sky-400 font-bold">${h.deliveryRate}</td>
+                    <td class="p-2 text-center text-amber-400">${h.totalHold}</td>
+                    <td class="p-2 text-center text-emerald-400 font-mono">৳ ${h.collection.toLocaleString()}</td>
+                </tr>
+            `).join('');
+        }
+
+        function switchClusterSummaryPeriod(period) {
+            ['clusterSummaryTabDaily', 'clusterSummaryTabWeekly', 'clusterSummaryTabMonthly', 'clusterSummaryTabCustom'].forEach(id => {
+                document.getElementById(id).className = 'flex-1 px-3 py-2 rounded-lg text-xs font-bold transition text-slate-400 bg-slate-800 hover:text-white';
+            });
+            const activeBtn = document.getElementById('clusterSummaryTab' + period.charAt(0).toUpperCase() + period.slice(1));
+            if (activeBtn) activeBtn.className = 'flex-1 px-3 py-2 rounded-lg text-xs font-bold transition bg-emerald-600 text-white';
+
+            document.getElementById('clusterSummaryCustomRange').classList.toggle('hidden', period !== 'custom');
+            document.getElementById('clusterSummaryPeriodLabel').innerText = `${period.toUpperCase()} Cluster Report`;
+        }
+
+        /* ===================== DATA IMPORT / EXPORT ===================== */
+
+        function exportDashboardData() {
+            const data = {
+                hubs: hubList,
+                sheets: taskSheets,
+                notices: customNotices,
+                version: '2.0',
+                exportedAt: new Date().toISOString()
+            };
+
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `narsingdi_cluster_backup_${new Date().toISOString().slice(0,10)}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('Backup exported successfully.');
+        }
+
+        function triggerImportJSON() {
+            document.getElementById('importJsonInput').click();
+        }
+
+        function importDashboardData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (data.hubs) hubList = data.hubs;
+                    if (data.sheets) taskSheets = data.sheets;
+                    if (data.notices) customNotices = data.notices;
+
+                    saveState();
+                    renderHubCards();
+                    renderTaskSheets();
+                    renderNotices();
+                    updateKPIs();
+                    showToast('Data imported successfully.');
+                } catch(err) {
+                    showToast('Invalid JSON backup file.');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function dismissClusterAlert() {
+            document.getElementById('clusterAlertsContainer').classList.add('hidden');
+        }
+
+        /* Initialize app on load */
+        document.addEventListener('DOMContentLoaded', initAuth);
+    </script>
+</body>
+</html>
