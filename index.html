@@ -2499,6 +2499,7 @@
         async function initCloudSync() {
             // 1) always start from this device's saved copy, so a refresh never resets anything
             loadLocalState();
+            placeKpisBelowHubCards();
             loadTabsAndSheets();
             loadNoticesFromStorage();
 
@@ -4324,61 +4325,55 @@
         }
 
 
-        function getCurrentDayMorningDispatchTotals() {
+        function getTodayMorningReportForHub(hubId) {
+            const report = hubReportsData?.[hubId];
+            if (!report) return null;
+            const rawDate = String(report.m_reportDate || '').trim();
+            if (!rawDate) return null;
             const todayISO = getTodayISO();
-            const todayShort = (() => {
-                const d = new Date();
-                return String(d.getDate()).padStart(2, '0') + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + d.getFullYear();
-            })();
+            const todayShort = (() => { const d = new Date(); return String(d.getDate()).padStart(2, '0') + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + d.getFullYear(); })();
+            let reportISO = '';
+            const m = rawDate.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})$/);
+            if (m) {
+                reportISO = m[3] + '-' + String(Number(m[2])).padStart(2, '0') + '-' + String(Number(m[1])).padStart(2, '0');
+            } else {
+                const parsed = new Date(rawDate);
+                if (!isNaN(parsed.getTime())) reportISO = parsed.getFullYear() + '-' + String(parsed.getMonth() + 1).padStart(2, '0') + '-' + String(parsed.getDate()).padStart(2, '0');
+            }
+            return (reportISO === todayISO || rawDate === todayShort) ? report : null;
+        }
 
+        function getTodayHubCardStats(hub) {
+            const report = getTodayMorningReportForHub(hub.id);
+            if (!report) return { ...hub, totalVolume: 0, delivered: 0, daPresent: 0, daTotal: 0, totalHold: 0, collection: 0, deliveryRate: '0%', status: 'No Morning Report' };
+            const n = id => Math.max(0, Number(report[id]) || 0);
+            const totalVolume = Math.max(0, n('m_prevHold') + n('m_reattemptReq') + n('m_recParcel') - n('m_areaChange'));
+            const delivered = n('delivered');
+            const daPresent = n('m_presentDA');
+            const daTotal = n('m_totalDA');
+            const totalHold = n('totalPending');
+            const collection = n('totalCollection');
+            const deliveryRate = totalVolume > 0 ? ((delivered / totalVolume) * 100).toFixed(1) + '%' : '0%';
+            return { ...hub, totalVolume, delivered, daPresent, daTotal, totalHold, collection, deliveryRate, status: delivered > 0 ? 'Dispatched' : 'In Progress' };
+        }
+
+        function getCurrentDayMorningDispatchTotals() {
             let present = 0;
             let total = 0;
-
-            Object.values(hubReportsData || {}).forEach(report => {
+            (hubList || []).forEach(hub => {
+                const report = getTodayMorningReportForHub(hub.id);
                 if (!report) return;
-
-                const rawDate = String(report.m_reportDate || '').trim();
-                if (!rawDate) return;
-
-                // Morning Dispatch Report date is normally DD-MM-YYYY.
-                let reportISO = '';
-                const m = rawDate.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})$/);
-                if (m) {
-                    reportISO = m[3] + '-' + String(Number(m[2])).padStart(2, '0') + '-' + String(Number(m[1])).padStart(2, '0');
-                } else {
-                    const parsed = new Date(rawDate);
-                    if (!isNaN(parsed.getTime())) {
-                        reportISO = parsed.getFullYear() + '-' + String(parsed.getMonth() + 1).padStart(2, '0') + '-' + String(parsed.getDate()).padStart(2, '0');
-                    }
-                }
-
-                if (reportISO !== todayISO && rawDate !== todayShort) return;
-
-                const presentDA = Math.max(0, Number(report.m_presentDA) || 0);
-                const totalDA = Math.max(0, Number(report.m_totalDA) || 0);
-
-                total += totalDA;
-                present += presentDA;
+                present += Math.max(0, Number(report.m_presentDA) || 0);
+                total += Math.max(0, Number(report.m_totalDA) || 0);
             });
-
             return { present, total };
         }
 
         function getCurrentDayMorningDispatchStats() {
-            const todayISO = getTodayISO();
             const stats = { totalParcels: 0, totalAssigned: 0, delivered: 0, pending: 0, returned: 0, collection: 0, presentDA: 0, totalDA: 0, hubs: [] };
-            const todayShort = (() => { const d = new Date(); return String(d.getDate()).padStart(2, '0') + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + d.getFullYear(); })();
-
             (hubList || []).forEach(hub => {
-                const report = hubReportsData?.[hub.id];
+                const report = getTodayMorningReportForHub(hub.id);
                 if (!report) return;
-                const rawDate = String(report.m_reportDate || '').trim();
-                let reportISO = '';
-                const m = rawDate.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})$/);
-                if (m) reportISO = m[3] + '-' + String(Number(m[2])).padStart(2, '0') + '-' + String(Number(m[1])).padStart(2, '0');
-                else { const parsed = new Date(rawDate); if (!isNaN(parsed.getTime())) reportISO = parsed.getFullYear() + '-' + String(parsed.getMonth() + 1).padStart(2, '0') + '-' + String(parsed.getDate()).padStart(2, '0'); }
-                if (reportISO !== todayISO && rawDate !== todayShort) return;
-
                 const n = id => Math.max(0, Number(report[id]) || 0);
                 const totalParcels = Math.max(0, n('m_prevHold') + n('m_reattemptReq') + n('m_recParcel') - n('m_areaChange'));
                 const assigned = Math.max(0, totalParcels - n('m_officeHold') - n('m_capShort'));
@@ -4427,16 +4422,17 @@
 
             const searchQuery = (document.getElementById('searchInput')?.value || '').toLowerCase().trim();
 
-            const filteredHubs = getVisibleHubs().filter(h => 
+            const todayHubStats = getVisibleHubs().map(getTodayHubCardStats);
+            const filteredHubs = todayHubStats.filter(h => 
                 h.name.toLowerCase().includes(searchQuery) || 
                 h.id.toLowerCase().includes(searchQuery)
             );
 
-            getVisibleHubs().forEach(h => {
+            todayHubStats.forEach(h => {
                 totalHubsVol += h.totalVolume;
                 totalHubsDelivered += h.delivered;
                 totalHubsDAPres += h.daPresent;
-                totalHubsDATot += (h.daTotal || h.daPresent);
+                totalHubsDATot += h.daTotal;
                 totalHubsColl += h.collection;
                 totalHubsHold += h.totalHold;
             });
@@ -5296,6 +5292,17 @@
         function closeVisibilityModal() {
             uiPinOk = false;
             document.getElementById('visibilityModal').classList.add('hidden');
+        }
+
+        function placeKpisBelowHubCards() {
+            const dashboard = document.getElementById('hubDashboardView');
+            const hubOverview = document.getElementById('viewOverview');
+            if (!dashboard || !hubOverview) return;
+            const ids = ['kpiCards', 'additionalKpiCards', 'onTimeKpi', 'operationInsights'];
+            ids.forEach(id => {
+                const el = document.querySelector(`[data-hide-key="${id}"]`);
+                if (el) dashboard.appendChild(el);
+            });
         }
 
         window.onload = async function() {
