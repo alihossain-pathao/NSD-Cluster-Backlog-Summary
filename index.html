@@ -3458,6 +3458,14 @@
                 }
             });
 
+            // Save calculated Morning Dispatch values too, so the dashboard
+            // can read the exact numbers shown in the report after refresh.
+            const calculatedIds = ['m_totalParcels','m_totalAssign','totalHold','totalCollection','delivered','fieldReturn','totalPending'];
+            calculatedIds.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) reportData[id] = el.value ?? el.innerText ?? '0';
+            });
+
             hubReportsData[currentActiveHubId] = reportData;
             updateHubSummaryFromReport(currentActiveHubId, reportData);
             cloudSyncHubReport(currentActiveHubId);
@@ -4329,31 +4337,53 @@
             const report = hubReportsData?.[hubId];
             if (!report) return null;
             const rawDate = String(report.m_reportDate || '').trim();
-            if (!rawDate) return null;
+            if (!rawDate) return report;
+
+            // Prefer today's Morning Dispatch Report. If the saved report has a
+            // manually entered/previous date, still use the latest saved report
+            // so the dashboard reflects the report the user just prepared.
             const todayISO = getTodayISO();
-            const todayShort = (() => { const d = new Date(); return String(d.getDate()).padStart(2, '0') + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + d.getFullYear(); })();
+            const todayShort = (() => {
+                const d = new Date();
+                return String(d.getDate()).padStart(2, '0') + '-' +
+                    String(d.getMonth() + 1).padStart(2, '0') + '-' + d.getFullYear();
+            })();
             let reportISO = '';
             const m = rawDate.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})$/);
             if (m) {
                 reportISO = m[3] + '-' + String(Number(m[2])).padStart(2, '0') + '-' + String(Number(m[1])).padStart(2, '0');
             } else {
                 const parsed = new Date(rawDate);
-                if (!isNaN(parsed.getTime())) reportISO = parsed.getFullYear() + '-' + String(parsed.getMonth() + 1).padStart(2, '0') + '-' + String(parsed.getDate()).padStart(2, '0');
+                if (!isNaN(parsed.getTime())) {
+                    reportISO = parsed.getFullYear() + '-' + String(parsed.getMonth() + 1).padStart(2, '0') + '-' + String(parsed.getDate()).padStart(2, '0');
+                }
             }
-            return (reportISO === todayISO || rawDate === todayShort) ? report : null;
+            return (reportISO === todayISO || rawDate === todayShort) ? report : report;
         }
 
         function getTodayHubCardStats(hub) {
             const report = getTodayMorningReportForHub(hub.id);
-            if (!report) return { ...hub, totalVolume: 0, delivered: 0, daPresent: 0, daTotal: 0, totalHold: 0, collection: 0, deliveryRate: '0%', status: 'No Morning Report' };
+            if (!report) {
+                return {
+                    ...hub,
+                    totalVolume: Number(hub.totalVolume) || 0,
+                    delivered: Number(hub.delivered) || 0,
+                    daPresent: Number(hub.daPresent) || 0,
+                    daTotal: Number(hub.daTotal) || 0,
+                    totalHold: Number(hub.totalHold) || 0,
+                    collection: Number(hub.collection) || 0,
+                    deliveryRate: hub.deliveryRate || '0%',
+                    status: hub.status || 'No Morning Report'
+                };
+            }
             const n = id => Math.max(0, Number(report[id]) || 0);
-            const totalVolume = Math.max(0, n('m_prevHold') + n('m_reattemptReq') + n('m_recParcel') - n('m_areaChange'));
+            const totalVolume = Math.max(0, n('m_totalParcels') || (n('m_prevHold') + n('m_reattemptReq') + n('m_recParcel') - n('m_areaChange')));
             const delivered = n('delivered');
             const daPresent = n('m_presentDA');
             const daTotal = n('m_totalDA');
-            const totalHold = n('totalPending');
+            const totalHold = n('totalPending') || n('totalHold');
             const collection = n('totalCollection');
-            const deliveryRate = totalVolume > 0 ? ((delivered / totalVolume) * 100).toFixed(1) + '%' : '0%';
+            const deliveryRate = totalVolume > 0 ? ((delivered / totalVolume) * 100).toFixed(1) + '%' : (hub.deliveryRate || '0%');
             return { ...hub, totalVolume, delivered, daPresent, daTotal, totalHold, collection, deliveryRate, status: delivered > 0 ? 'Dispatched' : 'In Progress' };
         }
 
@@ -4376,7 +4406,7 @@
                 if (!report) return;
                 const n = id => Math.max(0, Number(report[id]) || 0);
                 const totalParcels = Math.max(0, n('m_prevHold') + n('m_reattemptReq') + n('m_recParcel') - n('m_areaChange'));
-                const assigned = Math.max(0, totalParcels - n('m_officeHold') - n('m_capShort'));
+                const assigned = Math.max(0, n('m_totalAssign') || (totalParcels - n('m_officeHold') - n('m_capShort')));
                 const delivered = n('delivered');
                 const pending = n('totalPending');
                 const returned = n('fieldReturn');
