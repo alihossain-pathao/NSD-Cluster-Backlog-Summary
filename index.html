@@ -668,6 +668,71 @@
             </div>
         </div>
 
+        <!-- ADDITIONAL TODAY KPI CARDS -->
+        <div data-hide-key="additionalKpiCards" class="space-y-3">
+            <div class="flex items-center gap-2 px-1">
+                <span class="w-1.5 h-1.5 rounded-full bg-sky-400"></span>
+                <span class="text-[10px] uppercase font-black tracking-widest text-slate-400">TODAY'S OPERATION KPI</span>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="bg-[#131d36] border border-slate-800 rounded-xl p-4 flex items-center justify-between shadow-lg">
+                    <div><span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">TOTAL DELIVERED</span><div class="text-2xl font-black text-emerald-400 mt-1" id="kpiTodayDelivered">0 Pcs</div><span class="text-[10px] font-semibold text-slate-500">Today's closing report</span></div>
+                    <div class="w-10 h-10 bg-emerald-950/60 rounded-xl flex items-center justify-center text-emerald-400 border border-emerald-800/40"><i class="fa-solid fa-circle-check"></i></div>
+                </div>
+                <div class="bg-[#131d36] border border-slate-800 rounded-xl p-4 flex items-center justify-between shadow-lg">
+                    <div><span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">TOTAL ASSIGNED</span><div class="text-2xl font-black text-sky-400 mt-1" id="kpiTodayAssigned">0 Pcs</div><span class="text-[10px] font-semibold text-slate-500">Morning dispatch</span></div>
+                    <div class="w-10 h-10 bg-sky-950/60 rounded-xl flex items-center justify-center text-sky-400 border border-sky-800/40"><i class="fa-solid fa-truck"></i></div>
+                </div>
+                <div class="bg-[#131d36] border border-slate-800 rounded-xl p-4 flex items-center justify-between shadow-lg">
+                    <div><span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">PENDING DELIVERY</span><div class="text-2xl font-black text-amber-400 mt-1" id="kpiTodayPending">0 Pcs</div><span class="text-[10px] font-semibold text-slate-500">Closing pending</span></div>
+                    <div class="w-10 h-10 bg-amber-950/60 rounded-xl flex items-center justify-center text-amber-400 border border-amber-800/40"><i class="fa-solid fa-clock"></i></div>
+                </div>
+                <div class="bg-[#131d36] border border-slate-800 rounded-xl p-4 flex items-center justify-between shadow-lg">
+                    <div><span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">FAILED / RETURNED</span><div class="text-2xl font-black text-rose-400 mt-1" id="kpiTodayReturned">0 Pcs</div><span class="text-[10px] font-semibold text-slate-500">Field + office return</span></div>
+                    <div class="w-10 h-10 bg-rose-950/60 rounded-xl flex items-center justify-center text-rose-400 border border-rose-800/40"><i class="fa-solid fa-arrow-rotate-left"></i></div>
+                </div>
+                <div class="bg-[#131d36] border border-slate-800 rounded-xl p-4 flex items-center justify-between shadow-lg">
+                    <div><span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">SUCCESS RATE</span><div class="text-2xl font-black text-emerald-400 mt-1" id="kpiTodaySuccessRate">0.0%</div><span class="text-[10px] font-semibold text-slate-500">Delivered / Assigned</span></div>
+                    <div class="w-10 h-10 bg-emerald-950/60 rounded-xl flex items-center justify-center text-emerald-400 border border-emerald-800/40"><i class="fa-solid fa-chart-pie"></i></div>
+                </div>
+                <div class="bg-[#131d36] border border-slate-800 rounded-xl p-4 flex items-center justify-between shadow-lg">
+                    <div><span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">AVG PRODUCTIVITY / DA</span><div class="text-2xl font-black text-violet-400 mt-1" id="kpiTodayProductivity">0.0 Pcs</div><span class="text-[10px] font-semibold text-slate-500">Delivered per active DA</span></div>
+                    <div class="w-10 h-10 bg-violet-950/60 rounded-xl flex items-center justify-center text-violet-400 border border-violet-800/40"><i class="fa-solid fa-user-group"></i></div>
+                </div>
+                <div class="bg-[#131d36] border border-slate-800 rounded-xl p-4 flex items-center justify-between shadow-lg">
+                    <div><span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">COD COLLECTION</span><div class="text-2xl font-black text-cyan-400 mt-1" id="kpiTodayCollection">৳0</div><span class="text-[10px] font-semibold text-slate-500">Today's collection</span></div>
+                    <div class="w-10 h-10 bg-cyan-950/60 rounded-xl flex items-center justify-center text-cyan-400 border border-cyan-800/40"><i class="fa-solid fa-money-bill-wave"></i></div>
+                </div>
+                <div class="bg-[#131d36] border border-slate-800 rounded-xl p-4 flex items-center justify-between shadow-lg">
+                    <div><span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">TARGET ACHIEVEMENT</span><div class="text-2xl font-black text-blue-400 mt-1" id="kpiTodayTarget">0.0%</div><span class="text-[10px] font-semibold text-slate-500">Against 80% delivery target</span></div>
+                    <div class="w-10 h-10 bg-blue-950/60 rounded-xl flex items-center justify-center text-blue-400 border border-blue-800/40"><i class="fa-solid fa-bullseye"></i></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ON-TIME DELIVERY -->
+        <div data-hide-key="onTimeKpi" class="bg-[#131d36] border border-slate-800 rounded-xl p-4 flex items-center justify-between shadow-lg">
+            <div><span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">ON-TIME DELIVERY</span><div class="text-2xl font-black text-slate-300 mt-1" id="kpiTodayOnTime">N/A</div><span class="text-[10px] font-semibold text-slate-500">Requires a configured delivery-time target</span></div>
+            <div class="w-10 h-10 bg-slate-800 rounded-xl flex items-center justify-center text-slate-400 border border-slate-700"><i class="fa-solid fa-stopwatch"></i></div>
+        </div>
+
+        <!-- HUB PERFORMANCE & LIVE STATUS -->
+        <div data-hide-key="operationInsights" class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div class="bg-[#131d36] border border-slate-800 rounded-xl p-5 shadow-lg">
+                <div class="flex items-center justify-between mb-4"><div><span class="text-xs uppercase font-black tracking-wider text-slate-300">HUB PERFORMANCE TODAY</span><p class="text-[10px] text-slate-500 mt-1">Dispatch, delivery and active DA by Hub</p></div><i class="fa-solid fa-chart-column text-sky-400"></i></div>
+                <div id="todayHubPerformance" class="space-y-2"></div>
+            </div>
+            <div class="bg-[#131d36] border border-slate-800 rounded-xl p-5 shadow-lg">
+                <div class="flex items-center justify-between mb-4"><div><span class="text-xs uppercase font-black tracking-wider text-slate-300">DA / OPERATION STATUS</span><p class="text-[10px] text-slate-500 mt-1">Today's morning report and current online status</p></div><i class="fa-solid fa-users-viewfinder text-indigo-400"></i></div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div class="bg-[#0b1329] rounded-lg border border-slate-800 p-3 text-center"><span class="text-[9px] uppercase font-bold text-slate-500 block">ACTIVE DA</span><span id="statusActiveDA" class="text-xl font-black text-sky-400">0</span></div>
+                    <div class="bg-[#0b1329] rounded-lg border border-slate-800 p-3 text-center"><span class="text-[9px] uppercase font-bold text-slate-500 block">ABSENT DA</span><span id="statusAbsentDA" class="text-xl font-black text-rose-400">0</span></div>
+                    <div class="bg-[#0b1329] rounded-lg border border-slate-800 p-3 text-center"><span class="text-[9px] uppercase font-bold text-slate-500 block">ONLINE NOW</span><span id="statusOnlineNow" class="text-xl font-black text-emerald-400">0</span></div>
+                    <div class="bg-[#0b1329] rounded-lg border border-slate-800 p-3 text-center"><span class="text-[9px] uppercase font-bold text-slate-500 block">TOP HUB</span><span id="statusTopHub" class="text-sm font-black text-amber-400 truncate block">-</span></div>
+                </div>
+            </div>
+        </div>
+
         <!-- NAVIGATION MENU TRIGGER & TASK TABS BAR -->
         <div class="flex flex-wrap items-center justify-between bg-[#131d36] p-2.5 rounded-xl border border-slate-800 gap-3">
             <div class="flex items-center gap-2">
@@ -2600,6 +2665,7 @@
                     attendanceReportsData[d.id] = d.data() || {};
                 });
                 saveLocalState();
+                renderDashboard();
             } catch (e) { cloudFail(e); }
             cloudDb.collection('attendanceReports').onSnapshot(snap => {
                 snap.docChanges().forEach(ch => {
@@ -2614,6 +2680,7 @@
                     }
                 });
                 saveLocalState();
+                renderDashboard();
             }, () => {});
 
             // 7) every hub's inventory report (shared, live)
@@ -3313,6 +3380,7 @@
                 rows: currentAttendanceRows
             };
             cloudSyncAttendance(currentActiveAttendanceHubId);
+            renderDashboard();
         }
 
         function loadAttendanceData(hubId) {
@@ -4256,6 +4324,104 @@
         }
 
 
+        function getCurrentDayMorningDispatchTotals() {
+            const todayISO = getTodayISO();
+            const todayShort = (() => {
+                const d = new Date();
+                return String(d.getDate()).padStart(2, '0') + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + d.getFullYear();
+            })();
+
+            let present = 0;
+            let total = 0;
+
+            Object.values(hubReportsData || {}).forEach(report => {
+                if (!report) return;
+
+                const rawDate = String(report.m_reportDate || '').trim();
+                if (!rawDate) return;
+
+                // Morning Dispatch Report date is normally DD-MM-YYYY.
+                let reportISO = '';
+                const m = rawDate.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})$/);
+                if (m) {
+                    reportISO = m[3] + '-' + String(Number(m[2])).padStart(2, '0') + '-' + String(Number(m[1])).padStart(2, '0');
+                } else {
+                    const parsed = new Date(rawDate);
+                    if (!isNaN(parsed.getTime())) {
+                        reportISO = parsed.getFullYear() + '-' + String(parsed.getMonth() + 1).padStart(2, '0') + '-' + String(parsed.getDate()).padStart(2, '0');
+                    }
+                }
+
+                if (reportISO !== todayISO && rawDate !== todayShort) return;
+
+                const presentDA = Math.max(0, Number(report.m_presentDA) || 0);
+                const totalDA = Math.max(0, Number(report.m_totalDA) || 0);
+
+                total += totalDA;
+                present += presentDA;
+            });
+
+            return { present, total };
+        }
+
+        function getCurrentDayMorningDispatchStats() {
+            const todayISO = getTodayISO();
+            const stats = { totalParcels: 0, totalAssigned: 0, delivered: 0, pending: 0, returned: 0, collection: 0, presentDA: 0, totalDA: 0, hubs: [] };
+            const todayShort = (() => { const d = new Date(); return String(d.getDate()).padStart(2, '0') + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + d.getFullYear(); })();
+
+            (hubList || []).forEach(hub => {
+                const report = hubReportsData?.[hub.id];
+                if (!report) return;
+                const rawDate = String(report.m_reportDate || '').trim();
+                let reportISO = '';
+                const m = rawDate.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})$/);
+                if (m) reportISO = m[3] + '-' + String(Number(m[2])).padStart(2, '0') + '-' + String(Number(m[1])).padStart(2, '0');
+                else { const parsed = new Date(rawDate); if (!isNaN(parsed.getTime())) reportISO = parsed.getFullYear() + '-' + String(parsed.getMonth() + 1).padStart(2, '0') + '-' + String(parsed.getDate()).padStart(2, '0'); }
+                if (reportISO !== todayISO && rawDate !== todayShort) return;
+
+                const n = id => Math.max(0, Number(report[id]) || 0);
+                const totalParcels = Math.max(0, n('m_prevHold') + n('m_reattemptReq') + n('m_recParcel') - n('m_areaChange'));
+                const assigned = Math.max(0, totalParcels - n('m_officeHold') - n('m_capShort'));
+                const delivered = n('delivered');
+                const pending = n('totalPending');
+                const returned = n('fieldReturn');
+                const collection = n('totalCollection');
+                const presentDA = n('m_presentDA');
+                const totalDA = n('m_totalDA');
+                stats.totalParcels += totalParcels; stats.totalAssigned += assigned; stats.delivered += delivered; stats.pending += pending; stats.returned += returned; stats.collection += collection; stats.presentDA += presentDA; stats.totalDA += totalDA;
+                stats.hubs.push({ name: hub.name, volume: totalParcels, assigned, delivered, presentDA, totalDA, rate: assigned > 0 ? (delivered / assigned) * 100 : 0 });
+            });
+            return stats;
+        }
+
+        function updateAdditionalKpis() {
+            const s = getCurrentDayMorningDispatchStats();
+            const set = (id, value) => { const el = document.getElementById(id); if (el) el.innerText = value; };
+            const successRate = s.totalAssigned > 0 ? (s.delivered / s.totalAssigned) * 100 : 0;
+            const productivity = s.presentDA > 0 ? s.delivered / s.presentDA : 0;
+            const targetAchievement = (successRate / 80) * 100;
+            set('kpiTodayDelivered', `${s.delivered.toLocaleString()} Pcs`);
+            set('kpiTodayAssigned', `${s.totalAssigned.toLocaleString()} Pcs`);
+            set('kpiTodayPending', `${s.pending.toLocaleString()} Pcs`);
+            set('kpiTodayReturned', `${s.returned.toLocaleString()} Pcs`);
+            set('kpiTodaySuccessRate', `${successRate.toFixed(1)}%`);
+            set('kpiTodayProductivity', `${productivity.toFixed(1)} Pcs`);
+            set('kpiTodayCollection', `৳${s.collection.toLocaleString()}`);
+            set('kpiTodayTarget', `${targetAchievement.toFixed(1)}%`);
+            set('statusActiveDA', s.presentDA.toLocaleString());
+            set('statusAbsentDA', Math.max(0, s.totalDA - s.presentDA).toLocaleString());
+            const online = parseInt(document.getElementById('onlineUsersCount')?.innerText || '0', 10) || 0;
+            set('statusOnlineNow', online.toLocaleString());
+            const top = s.hubs.slice().sort((a,b) => b.rate - a.rate)[0];
+            set('statusTopHub', top ? `${formatHubDisplayName(top.name)} (${top.rate.toFixed(1)}%)` : '-');
+            const perf = document.getElementById('todayHubPerformance');
+            if (perf) perf.innerHTML = s.hubs.length ? s.hubs.map(h => `
+                <div class="bg-[#0b1329] border border-slate-800 rounded-lg p-2.5">
+                    <div class="flex items-center justify-between gap-2"><span class="text-[10px] font-black text-white truncate">${formatHubDisplayName(h.name)}</span><span class="text-[10px] font-black text-emerald-400">${h.rate.toFixed(1)}%</span></div>
+                    <div class="flex items-center justify-between text-[9px] text-slate-500 mt-1"><span>${h.volume.toLocaleString()} Dispatch</span><span>${h.delivered.toLocaleString()} Delivered</span><span>${h.presentDA}/${h.totalDA} DA</span></div>
+                </div>`).join('') : '<div class="text-center text-xs text-slate-500 py-4">No current-day Morning Dispatch Report</div>';
+        }
+
         function renderDashboard() {
             let totalHubsVol = 0, totalHubsDelivered = 0, totalHubsDAPres = 0, totalHubsDATot = 0, totalHubsColl = 0, totalHubsHold = 0;
 
@@ -4290,8 +4456,17 @@
                 clusterRateEl.innerText = `${avgPct}%`;
             }
 
+            // ACTIVE AGENTS (DA) must always reflect today's MORNING DISPATCH REPORT totals from every Hub.
+            const currentDayDA = getCurrentDayMorningDispatchTotals();
             const clusterDAEl = document.getElementById('clusterTotalDA');
-            if (clusterDAEl) clusterDAEl.innerText = `${totalHubsDAPres} / ${totalHubsDATot} DA`;
+            if (clusterDAEl) clusterDAEl.innerText = `${currentDayDA.present} / ${currentDayDA.total} DA`;
+            const clusterDAPctEl = clusterDAEl?.parentElement?.querySelector('span.text-sky-400');
+            if (clusterDAPctEl) {
+                const pct = currentDayDA.total > 0 ? ((currentDayDA.present / currentDayDA.total) * 100).toFixed(1) : '0.0';
+                clusterDAPctEl.innerHTML = `<i class="fa-solid fa-user-check"></i> ${pct}% Attendance`;
+            }
+
+            updateAdditionalKpis();
 
             const clusterHoldEl = document.getElementById('clusterTotalHold');
             if (clusterHoldEl) clusterHoldEl.innerText = `${totalHubsHold.toLocaleString()} Pcs`;
