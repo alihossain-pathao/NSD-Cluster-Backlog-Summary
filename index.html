@@ -374,28 +374,6 @@
         html.app-booting [data-role-control="post-notice"] {
             visibility: hidden !important;
         }
-
-/* ALL HUB DAILY MORNING + CLOSING REPORT */
-.cluster-report-page{background:#eef3f8;color:#10233b;min-height:100vh;padding:16px}
-.cluster-report-toolbar{max-width:1500px;margin:0 auto 14px;background:#102b48;color:#fff;border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;box-shadow:0 4px 14px rgba(0,0,0,.12)}
-.cluster-report-toolbar .cluster-report-date{background:#fff;color:#10233b;border:1px solid #a8b7c8;border-radius:7px;padding:7px 9px;font-weight:700}
-.cluster-report-hub{max-width:1500px;margin:0 auto 18px;background:#fff;border:1px solid #a7b8c9;border-radius:10px;padding:12px;box-shadow:0 2px 9px rgba(0,0,0,.10);page-break-after:always}
-.cluster-report-hub:last-child{page-break-after:auto}
-.cluster-report-hub-title{text-align:center;margin:2px 0 2px;font-size:20px;font-weight:900;color:#09213d}
-.cluster-report-hub-date{text-align:center;font-size:12px;font-weight:800;color:#50657b;margin-bottom:10px}
-.cluster-report-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start}
-.cluster-report-grid .report-card{box-shadow:none;margin:0;width:100%;}
-.cluster-report-grid .report-card input,.cluster-report-grid .report-card select{pointer-events:none}
-.cluster-report-grid .btn-action,.cluster-report-grid button{display:none!important}
-.cluster-report-missing{padding:42px 20px;text-align:center;border:1px dashed #a9b7c5;border-radius:10px;background:#f8fafc;color:#7a2e2e;font-weight:800}
-.cluster-report-note{max-width:1500px;margin:0 auto 12px;text-align:center;color:#60758b;font-size:11px}
-@media(max-width:1100px){.cluster-report-grid{grid-template-columns:1fr}}
-@media print{
- body.cluster-printing #hubDashboardView,body.cluster-printing #hubReportView,body.cluster-printing #attendanceReportView,body.cluster-printing #inventoryReportView,body.cluster-printing #ageingReportView,body.cluster-printing #excelImportReportView{display:none!important}
- body.cluster-printing #allHubDailyReportView{display:block!important}
- .cluster-report-toolbar{display:none!important}.cluster-report-page{padding:0;background:#fff}.cluster-report-hub{box-shadow:none;border:0;margin:0;padding:5mm;min-height:0}.cluster-report-grid{grid-template-columns:1fr 1fr;gap:6mm}
-}
-
 </style>
 </head>
 <body class="min-h-screen antialiased flex flex-col">
@@ -865,14 +843,9 @@
         <div id="viewOverview" class="space-y-6">
             <!-- HUB MANAGEMENT CARDS (UNTOUCHED) -->
             <div data-hide-key="hubCards">
-                <div class="flex items-center justify-between gap-3 mb-3 flex-wrap">
-                <h2 class="text-base font-extrabold text-white flex items-center gap-2">
+                <h2 class="text-base font-extrabold text-white mb-3 flex items-center gap-2">
                     <i class="fa-solid fa-cubes text-sky-400"></i> Hub Management Cards
                 </h2>
-                <button type="button" onclick="openAllHubDailyReport()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black py-2.5 px-4 rounded-xl shadow-md transition-all duration-200 flex items-center gap-2">
-                    <i class="fa-solid fa-layer-group"></i> ALL HUB MORNING & CLOSING REPORT
-                </button>
-            </div>
                 <div id="hubCardsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 </div>
             </div>
@@ -1335,28 +1308,6 @@
         </div>
     </div>
 
-
-    <!-- ALL HUB DAILY MORNING + CLOSING REPORT VIEW -->
-    <div id="allHubDailyReportView" class="hidden cluster-report-page">
-        <div class="cluster-report-toolbar">
-            <button type="button" onclick="closeAllHubDailyReport()" class="px-3 py-2 bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold rounded-lg">
-                <i class="fa-solid fa-arrow-left mr-1"></i> Back to Dashboard
-            </button>
-            <div class="font-black text-sm flex-1">NARSINGDI CLUSTER — ALL HUB MORNING & CLOSING REPORT</div>
-            <label class="text-xs font-bold flex items-center gap-2">Report Date
-                <input type="date" id="allHubReportDate" class="cluster-report-date">
-            </label>
-            <button type="button" onclick="renderAllHubDailyReport()" class="px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white text-xs font-black rounded-lg">
-                <i class="fa-solid fa-rotate mr-1"></i> Load Report
-            </button>
-            <button type="button" onclick="printAllHubDailyReport()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black rounded-lg">
-                <i class="fa-solid fa-print mr-1"></i> Print / PDF
-            </button>
-        </div>
-        <div class="cluster-report-note">Source: saved Firestore/local daily snapshots. No data is invented; hubs without a snapshot for the selected date are shown as unavailable.</div>
-        <div id="allHubDailyReportContent"></div>
-    </div>
-
     <!-- D.A. ATTENDANCE REPORT VIEW -->
 
 
@@ -1647,28 +1598,7 @@
 
             <div id="summaryStatsGrid" class="grid grid-cols-2 gap-3"></div>
 
-            <div class="mt-4 pt-4 border-t border-slate-800">
-                <div class="flex items-center justify-between mb-2">
-                    <div class="text-[10px] font-black uppercase tracking-wider text-slate-300">Full Daily Historical Snapshots</div>
-                    <i class="fa-solid fa-database text-slate-500 text-xs"></i>
-                </div>
-                <div id="summarySnapshotHistory" class="space-y-2 max-h-56 overflow-y-auto pr-1"></div>
-            </div>
-
             <div class="text-[10px] text-slate-500 font-medium text-center pt-3 mt-3 border-t border-slate-800/60" id="summaryReportCount"></div>
-        </div>
-    </div>
-
-    <!-- FULL DAILY HISTORICAL SNAPSHOT MODAL -->
-    <div id="hubSnapshotModal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
-        <div class="bg-[#131d36] border border-slate-700 rounded-xl w-full max-w-5xl max-h-[92vh] overflow-hidden shadow-2xl relative">
-            <div class="flex items-center justify-between p-4 border-b border-slate-800">
-                <h3 class="text-sm font-black text-white flex items-center gap-2" id="snapshotModalTitle">Full Daily Snapshot</h3>
-                <button onclick="closeHubDailySnapshotModal()" class="text-slate-400 hover:text-white text-lg">
-                    <i class="fa-solid fa-xmark"></i>
-                </button>
-            </div>
-            <div id="snapshotModalBody" class="p-4 overflow-y-auto max-h-[calc(92vh-65px)]"></div>
         </div>
     </div>
 
@@ -1888,9 +1818,6 @@
 
         let hubReportsData = {};
         let hubReportHistory = {};
-        // Full daily Morning + Closing snapshots. Each date keeps every report input/select value
-        // plus calculated display values, while hubReportHistory remains the lightweight summary index.
-        let hubReportDailySnapshots = {};
         let currentActiveHubId = null;
         let currentSummaryHubId = null;
         let currentSummaryPeriod = 'daily';
@@ -1975,7 +1902,7 @@
         function saveLocalState() {
             try {
                 localStorage.setItem(LS_STATE_KEY, JSON.stringify({
-                    hubList, hubReportsData, hubReportHistory, hubReportDailySnapshots, attendanceReportsData, inventoryReportsData
+                    hubList, hubReportsData, hubReportHistory, attendanceReportsData, inventoryReportsData
                 }));
             } catch (e) {}
         }
@@ -1988,7 +1915,6 @@
                 if (Array.isArray(st.hubList)) hubList = st.hubList;
                 if (st.hubReportsData) hubReportsData = st.hubReportsData;
                 if (st.hubReportHistory) hubReportHistory = st.hubReportHistory;
-                if (st.hubReportDailySnapshots) hubReportDailySnapshots = st.hubReportDailySnapshots;
                 if (st.attendanceReportsData) attendanceReportsData = st.attendanceReportsData;
                 if (st.inventoryReportsData) inventoryReportsData = st.inventoryReportsData;
                 return true;
@@ -2042,8 +1968,7 @@
                     try {
                         await cloudDb.collection('hubReports').doc(hubId).set({
                             fields: hubReportsData[hubId] || {},
-                            history: hubReportHistory[hubId] || {},
-                            dailySnapshots: hubReportDailySnapshots[hubId] || {}
+                            history: hubReportHistory[hubId] || {}
                         });
                     } catch (e) { cloudFail(e); }
                     finally { pendingWrites.reports[hubId] = Math.max(0, (pendingWrites.reports[hubId] || 1) - 1); }
@@ -2630,7 +2555,7 @@
                 if (myAccess.isOwner && cloudDb.__firebase) {
                     if (await cloudDb.collection('hubReports').isEmpty()) {
                         for (const id of Object.keys(hubReportsData)) {
-                            await cloudDb.collection('hubReports').doc(id).set({ fields: hubReportsData[id] || {}, history: hubReportHistory[id] || {}, dailySnapshots: hubReportDailySnapshots[id] || {} });
+                            await cloudDb.collection('hubReports').doc(id).set({ fields: hubReportsData[id] || {}, history: hubReportHistory[id] || {} });
                         }
                     }
                     if (await cloudDb.collection('attendanceReports').isEmpty()) {
@@ -2653,12 +2578,11 @@
                     const id = ch.doc.id;
                     if (pendingWrites.reports[id] > 0) return;
                     if (ch.type === 'removed') {
-                        delete hubReportsData[id]; delete hubReportHistory[id]; delete hubReportDailySnapshots[id];
+                        delete hubReportsData[id]; delete hubReportHistory[id];
                     } else {
                         const d = ch.doc.data() || {};
                         hubReportsData[id] = d.fields || {};
                         hubReportHistory[id] = d.history || {};
-                        hubReportDailySnapshots[id] = d.dailySnapshots || {};
                         if (id === currentActiveHubId) touchedActive = true;
                     }
                 });
@@ -2771,130 +2695,16 @@
             }).catch(() => showToast('Could not save image'));
         }
 
-
-        /* ================= ALL HUB DAILY MORNING + CLOSING REPORT ================= */
-        function getClusterReportTodayISO() {
-            return getTodayISO();
-        }
-
-        function setSnapshotIntoCurrentReport(snapshot) {
-            const fields = snapshot?.fields || {};
-            document.querySelectorAll('#hubReportView input, #hubReportView select, #hubReportView textarea').forEach(el => {
-                if (!el.id) return;
-                if (Object.prototype.hasOwnProperty.call(fields, el.id)) el.value = fields[el.id] ?? '';
-            });
-            // Recalculate the same report formulas used by the live report.
-            try { calculateMorningFormulas(); } catch (e) {}
-            // Restore exact saved display values from the snapshot after recalculation.
-            const displays = snapshot?.displays || {};
-            Object.entries(displays).forEach(([id, value]) => {
-                const el = document.getElementById(id);
-                if (!el) return;
-                const tag = el.tagName.toLowerCase();
-                if (['input','select','textarea'].includes(tag)) {
-                    if (tag === 'select') el.value = value;
-                    else el.value = value;
-                } else {
-                    el.innerText = value;
-                }
-            });
-        }
-
-        function restoreCurrentReportForm(savedValues) {
-            if (!savedValues) return;
-            Object.entries(savedValues).forEach(([id, value]) => {
-                const el = document.getElementById(id);
-                if (el) el.value = value;
-            });
-            try { calculateMorningFormulas(); } catch (e) {}
-        }
-
-        function collectCurrentReportInputValues() {
-            const out = {};
-            document.querySelectorAll('#hubReportView input, #hubReportView select, #hubReportView textarea').forEach(el => {
-                if (el.id) out[el.id] = el.value;
-            });
-            return out;
-        }
-
-        function cloneCurrentReportCardsForCluster(hubName) {
-            const morning = document.getElementById('morningReportCard')?.cloneNode(true);
-            const closing = document.getElementById('closingReportCard')?.cloneNode(true);
-            if (!morning || !closing) return '';
-            morning.id = 'clusterMorning_' + Math.random().toString(36).slice(2);
-            closing.id = 'clusterClosing_' + Math.random().toString(36).slice(2);
-            morning.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
-            closing.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
-            const mh = morning.querySelector('.header-title h2');
-            const ch = closing.querySelector('.header-title h2');
-            if (mh) mh.textContent = `${hubName.toUpperCase()} - MORNING DISPATCH REPORT`;
-            if (ch) ch.textContent = `${hubName.toUpperCase()} - CLOSING REPORT`;
-            morning.querySelectorAll('input,select,textarea').forEach(el => { el.disabled = true; el.setAttribute('readonly','readonly'); });
-            closing.querySelectorAll('input,select,textarea').forEach(el => { el.disabled = true; el.setAttribute('readonly','readonly'); });
-            return { morning: morning.outerHTML, closing: closing.outerHTML };
-        }
-
-        function openAllHubDailyReport() {
-            const dateEl = document.getElementById('allHubReportDate');
-            if (dateEl && !dateEl.value) dateEl.value = getClusterReportTodayISO();
-            document.getElementById('hubDashboardView')?.classList.add('hidden');
-            document.getElementById('hubReportView')?.classList.add('hidden');
-            document.getElementById('attendanceReportView')?.classList.add('hidden');
-            document.getElementById('inventoryReportView')?.classList.add('hidden');
-            document.getElementById('ageingReportView')?.classList.add('hidden');
-            document.getElementById('excelImportReportView')?.classList.add('hidden');
-            document.getElementById('allHubDailyReportView')?.classList.remove('hidden');
-            renderAllHubDailyReport();
-            window.scrollTo({top:0,behavior:'smooth'});
-        }
-
-        function closeAllHubDailyReport() {
-            document.body.classList.remove('cluster-printing');
-            document.getElementById('allHubDailyReportView')?.classList.add('hidden');
-            document.getElementById('hubDashboardView')?.classList.remove('hidden');
-            window.scrollTo({top:0,behavior:'smooth'});
-        }
-
-        function printAllHubDailyReport() {
-            renderAllHubDailyReport();
-            document.body.classList.add('cluster-printing');
-            setTimeout(() => window.print(), 80);
-            setTimeout(() => document.body.classList.remove('cluster-printing'), 1000);
-        }
-
-        function renderAllHubDailyReport() {
-            const date = document.getElementById('allHubReportDate')?.value || getClusterReportTodayISO();
-            const content = document.getElementById('allHubDailyReportContent');
-            if (!content) return;
-            const previousActive = currentActiveHubId;
-            const previousValues = collectCurrentReportInputValues();
-            const previousVisibility = document.getElementById('hubReportView')?.classList.contains('hidden');
-            const accessible = hubList.filter(h => hasHubAccess(h.id));
-            const hubs = accessible.length ? accessible : hubList;
-            let html = '';
-
-            hubs.forEach((hub) => {
-                const snapshot = getHubDailySnapshot(hub.id, date);
-                if (!snapshot) {
-                    html += `<section class="cluster-report-hub"><h2 class="cluster-report-hub-title">${String(hub.name || 'Hub').replace(/[<>&"]/g,'')}</h2><div class="cluster-report-hub-date">${formatSnapshotDate(date)}</div><div class="cluster-report-missing">No daily Morning + Closing snapshot found for this Hub on ${formatSnapshotDate(date)}.</div></section>`;
-                    return;
-                }
-                currentActiveHubId = hub.id;
-                setSnapshotIntoCurrentReport(snapshot);
-                const cards = cloneCurrentReportCardsForCluster(hub.name || snapshot.hubName || 'HUB');
-                html += `<section class="cluster-report-hub"><h2 class="cluster-report-hub-title">NARSINGDI CLUSTER — ${String(hub.name || snapshot.hubName || 'HUB').toUpperCase().replace(/[<>&"]/g,'')}</h2><div class="cluster-report-hub-date">${formatSnapshotDate(date)}</div><div class="cluster-report-grid">${cards.morning}${cards.closing}</div><div class="text-[9px] text-slate-500 text-right mt-2">Snapshot saved: ${snapshot.savedAt ? new Date(snapshot.savedAt).toLocaleString() : '—'}</div></section>`;
-            });
-
-            currentActiveHubId = previousActive;
-            restoreCurrentReportForm(previousValues);
-            content.innerHTML = html || '<div class="cluster-report-missing">No accessible hubs found.</div>';
-            if (!previousVisibility) document.getElementById('hubReportView')?.classList.remove('hidden');
+        function formatHubDisplayName(hubName) {
+            const name = String(hubName || 'HUB').trim().replace(/\s+/g, ' ');
+            if (!name) return 'HUB';
+            return /\bHUB\b$/i.test(name) ? name.toUpperCase() : `${name.toUpperCase()} HUB`;
         }
 
         function generateReport(hubId, hubName) {
             if (!hasHubAccess(hubId)) { showToast('You do not have access to this hub'); return; }
             currentActiveHubId = hubId;
-            const upperName = (hubName || 'HUB').toUpperCase();
+            const upperName = formatHubDisplayName(hubName);
 
             document.getElementById('morningHeaderTitle').innerText = `${upperName} - MORNING DISPATCH REPORT`;
             document.getElementById('closingHeaderTitle').innerText = `${upperName} - CLOSING REPORT`;
@@ -2919,7 +2729,7 @@
         function generateAttendanceReport(hubId, hubName) {
             if (!hasHubAccess(hubId)) { showToast('You do not have access to this hub'); return; }
             currentActiveAttendanceHubId = hubId;
-            document.getElementById('att_hubNameDisplay').innerText = hubName || 'Hub';
+            document.getElementById('att_hubNameDisplay').innerText = formatHubDisplayName(hubName);
 
             document.getElementById('hubDashboardView').classList.add('hidden');
             document.getElementById('attendanceReportView').classList.remove('hidden');
@@ -3299,8 +3109,8 @@
         function generateInventoryReport(hubId, hubName) {
             if (!hasHubAccess(hubId)) { showToast('You do not have access to this hub'); return; }
             currentActiveInventoryHubId=hubId;
-            document.getElementById('inventoryHubTitle').innerText=hubName||'Hub';
-            document.getElementById('inventorySummaryTitle').innerText=`${hubName||'Hub'} Inventory Report`;
+            document.getElementById('inventoryHubTitle').innerText=formatHubDisplayName(hubName);
+            document.getElementById('inventorySummaryTitle').innerText=`${formatHubDisplayName(hubName)} Inventory Report`;
             document.getElementById('hubDashboardView').classList.add('hidden');
             document.getElementById('hubReportView').classList.add('hidden');
             document.getElementById('attendanceReportView').classList.add('hidden');
@@ -3581,9 +3391,6 @@
 
             hubReportsData[currentActiveHubId] = reportData;
             updateHubSummaryFromReport(currentActiveHubId, reportData);
-            // Keep a complete immutable-by-date snapshot. During the day the same date is
-            // updated with the latest values; previous dates are never overwritten.
-            recordHubDailySnapshot(currentActiveHubId, reportData);
             cloudSyncHubReport(currentActiveHubId);
         }
 
@@ -3648,133 +3455,6 @@
             recordHubReportHistory(hubId, hub);
             renderDashboard();
             cloudSyncHubList();
-        }
-
-        /* FULL DAILY MORNING + CLOSING SNAPSHOT HISTORY */
-        function collectHubReportDisplayValues() {
-            const displays = {};
-            document.querySelectorAll('#hubReportView [id]').forEach(el => {
-                if (!el.id) return;
-                const tag = el.tagName.toLowerCase();
-                if (['input', 'select', 'textarea', 'button', 'script', 'style'].includes(tag)) return;
-                const text = (el.innerText ?? el.textContent ?? '').replace(/\s+/g, ' ').trim();
-                if (text && text.length <= 500) displays[el.id] = text;
-            });
-            return displays;
-        }
-
-        function recordHubDailySnapshot(hubId, reportData) {
-            if (!hubId) return;
-            if (!hubReportDailySnapshots[hubId]) hubReportDailySnapshots[hubId] = {};
-
-            const todayISO = getTodayISO();
-            const existing = hubReportDailySnapshots[hubId][todayISO] || {};
-            hubReportDailySnapshots[hubId][todayISO] = {
-                version: 1,
-                date: todayISO,
-                hubId,
-                hubName: (hubList.find(h => h.id === hubId)?.name || '').trim(),
-                savedAt: new Date().toISOString(),
-                fields: { ...(reportData || {}) },
-                displays: collectHubReportDisplayValues(),
-                summary: { ...(hubReportHistory[hubId]?.[todayISO] || {}) }
-            };
-        }
-
-        function getHubDailySnapshot(hubId, dateISO) {
-            return hubReportDailySnapshots?.[hubId]?.[dateISO] || null;
-        }
-
-        function getHubSnapshotDates(hubId, startISO, endISO) {
-            return Object.keys(hubReportDailySnapshots?.[hubId] || {})
-                .filter(date => date >= startISO && date <= endISO)
-                .sort((a, b) => b.localeCompare(a));
-        }
-
-        function formatSnapshotDate(dateISO) {
-            if (!dateISO) return '';
-            const [y, m, d] = dateISO.split('-');
-            return `${d}-${m}-${y}`;
-        }
-
-        function getReportFieldLabel(id) {
-            const el = document.getElementById(id);
-            if (!el) return id;
-            const row = el.closest('tr');
-            if (row) {
-                const cells = [...row.querySelectorAll('td,th')];
-                const ownCell = el.closest('td,th');
-                const labelCell = cells.find(c => c !== ownCell && !c.querySelector('input,select,textarea,button') && (c.innerText || '').trim());
-                if (labelCell) return (labelCell.innerText || '').replace(/\s+/g, ' ').trim();
-                const firstText = cells.find(c => !c.querySelector('input,select,textarea,button') && (c.innerText || '').trim());
-                if (firstText) return (firstText.innerText || '').replace(/\s+/g, ' ').trim();
-            }
-            const aria = el.getAttribute('aria-label') || el.getAttribute('title');
-            return aria || id;
-        }
-
-        function renderHubSnapshotHistory(hubId, startISO, endISO) {
-            const container = document.getElementById('summarySnapshotHistory');
-            if (!container) return;
-            const dates = getHubSnapshotDates(hubId, startISO, endISO);
-            if (!dates.length) {
-                container.innerHTML = `<div class="text-[10px] text-slate-500 text-center py-3">No full daily snapshots saved for this period.</div>`;
-                return;
-            }
-            container.innerHTML = dates.map(date => {
-                const snap = getHubDailySnapshot(hubId, date) || {};
-                const fieldCount = Object.keys(snap.fields || {}).length;
-                const saved = snap.savedAt ? new Date(snap.savedAt).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'}) : '';
-                return `
-                    <div class="flex items-center justify-between gap-2 bg-[#0b1329] border border-slate-800 rounded-lg px-3 py-2">
-                        <div class="min-w-0">
-                            <div class="text-[11px] font-black text-white">${formatSnapshotDate(date)}</div>
-                            <div class="text-[9px] text-slate-500">${fieldCount} fields saved${saved ? ` • ${saved}` : ''}</div>
-                        </div>
-                        <button type="button" onclick="viewHubDailySnapshot('${hubId}', '${date}')" class="shrink-0 px-3 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-white text-[10px] font-bold">
-                            <i class="fa-solid fa-eye mr-1"></i> View Full Report
-                        </button>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        function viewHubDailySnapshot(hubId, dateISO) {
-            const snapshot = getHubDailySnapshot(hubId, dateISO);
-            if (!snapshot) {
-                showToast('No full snapshot found for this date');
-                return;
-            }
-            const hub = hubList.find(h => h.id === hubId);
-            const title = document.getElementById('snapshotModalTitle');
-            const body = document.getElementById('snapshotModalBody');
-            if (!title || !body) return;
-            title.innerHTML = `<i class="fa-solid fa-clock-rotate-left text-sky-400"></i> ${hub?.name || snapshot.hubName || 'Hub'} - ${formatSnapshotDate(dateISO)} Full Snapshot`;
-
-            const fields = snapshot.fields || {};
-            const morning = Object.entries(fields).filter(([id]) => id.startsWith('m_'));
-            const closing = Object.entries(fields).filter(([id]) => !id.startsWith('m_'));
-            const section = (heading, entries) => `
-                <div class="mb-4">
-                    <div class="text-[11px] font-black uppercase tracking-wider text-sky-400 border-b border-slate-800 pb-2 mb-2">${heading}</div>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        ${entries.map(([id, value]) => `
-                            <div class="bg-[#0b1329] border border-slate-800 rounded-lg px-3 py-2">
-                                <div class="text-[9px] uppercase font-bold text-slate-500">${getReportFieldLabel(id)}</div>
-                                <div class="text-xs font-bold text-white mt-0.5 break-words">${String(value ?? '').replace(/</g,'&lt;').replace(/>/g,'&gt;') || '—'}</div>
-                                <div class="text-[8px] text-slate-600 mt-0.5">${id}</div>
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>`;
-
-            body.innerHTML = section('Morning Dispatch Report', morning) + section('Closing Report', closing) + `
-                <div class="text-[9px] text-slate-500 text-center border-t border-slate-800 pt-3">Snapshot saved: ${snapshot.savedAt ? new Date(snapshot.savedAt).toLocaleString() : '—'}</div>`;
-            document.getElementById('hubSnapshotModal')?.classList.remove('hidden');
-        }
-
-        function closeHubDailySnapshotModal() {
-            document.getElementById('hubSnapshotModal')?.classList.add('hidden');
         }
 
         /* DAILY / WEEKLY / MONTHLY / CUSTOM REPORT SUMMARY */
@@ -3889,7 +3569,7 @@
             if (!hasHubAccess(hubId)) { showToast('You do not have access to this hub'); return; }
             currentSummaryHubId = hubId;
             currentSummaryPeriod = 'daily';
-            document.getElementById('summaryModalHubName').innerHTML = `<i class="fa-solid fa-chart-pie text-sky-400"></i> ${hubName} - Report Summary`;
+            document.getElementById('summaryModalHubName').innerHTML = `<i class="fa-solid fa-chart-pie text-sky-400"></i> ${formatHubDisplayName(hubName)} - Report Summary`;
             document.getElementById('summaryCustomRange').classList.add('hidden');
             document.getElementById('hubSummaryModal').classList.remove('hidden');
             renderHubSummary();
@@ -3935,7 +3615,6 @@
 
             const grid = document.getElementById('summaryStatsGrid');
             if (grid) grid.innerHTML = statsGridHTML(totals, avgDeliveryRate, avgDAPresent, avgDATotal);
-            renderHubSnapshotHistory(currentSummaryHubId, range.startISO, range.endISO);
 
             const countEl = document.getElementById('summaryReportCount');
             if (countEl) {
@@ -3998,7 +3677,7 @@
                     const hubStats = computeSummaryStats(hub.id, range.startISO, range.endISO);
                     return `
                         <tr class="border-t border-slate-800/60 hover:bg-slate-800/30 transition">
-                            <td class="p-2 font-bold text-white">${hub.name}</td>
+                            <td class="p-2 font-bold text-white">${formatHubDisplayName(hub.name)}</td>
                             <td class="p-2 text-center text-slate-200">${hubStats.totals.totalVolume}</td>
                             <td class="p-2 text-center text-emerald-400 font-bold">${hubStats.totals.delivered}</td>
                             <td class="p-2 text-center text-sky-400 font-bold">${hubStats.avgDeliveryRate}%</td>
@@ -4666,7 +4345,7 @@
                                 </div>
                                 <div>
                                     <span class="text-[10px] font-extrabold uppercase tracking-wider text-sky-400">${hub.type || 'HUB'}</span>
-                                    <h3 class="text-base font-bold text-white leading-snug">${hub.name}</h3>
+                                    <h3 class="text-base font-bold text-white leading-snug">${formatHubDisplayName(hub.name)}</h3>
                                 </div>
                             </div>
 
@@ -4926,7 +4605,6 @@
             hubList = hubList.filter(h => h.id !== hubId);
             delete hubReportsData[hubId];
             delete hubReportHistory[hubId];
-            delete hubReportDailySnapshots[hubId];
             delete attendanceReportsData[hubId];
             delete inventoryReportsData[hubId];
             filterHubs();
@@ -4988,7 +4666,6 @@
                 hubs: hubList,
                 reports: hubReportsData,
                 reportHistory: hubReportHistory,
-                reportDailySnapshots: hubReportDailySnapshots,
                 attendance: attendanceReportsData,
                 inventory: inventoryReportsData,
                 notices: clusterNotices,
@@ -5021,7 +4698,6 @@
                         hubList = imported.hubs;
                         hubReportsData = imported.reports || {};
                         hubReportHistory = imported.reportHistory || {};
-                        hubReportDailySnapshots = imported.reportDailySnapshots || {};
                         attendanceReportsData = imported.attendance || {};
                         inventoryReportsData = imported.inventory || {};
                         if (imported.notices) { clusterNotices = imported.notices; saveNoticesToStorage(); renderClusterNotices(); }
@@ -5448,8 +5124,6 @@
         }
 
         window.onload = async function() {
-            const allHubDate = document.getElementById('allHubReportDate');
-            if (allHubDate) allHubDate.value = getTodayISO();
             // Render immediately from local/cached data so the UI shows up right away,
             // instead of waiting for the cloud sync round-trips to finish first.
             loadLocalState();
