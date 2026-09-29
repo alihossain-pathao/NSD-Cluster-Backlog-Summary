@@ -980,9 +980,9 @@
                                     <th class="p-2.5 text-center">Total Parcels</th>
                                     <th class="p-2.5 text-center">Assign</th>
                                     <th class="p-2.5 text-center">Assign Rate</th>
-                                    <th class="p-2.5 text-center">Total DA</th>
                                     <th class="p-2.5 text-center">Office Hold</th>
                                     <th class="p-2.5 text-center">Office Hold Ratio</th>
+                                    <th class="p-2.5 text-center">Total DA</th>
                                     <th class="p-2.5 text-center">Present</th>
                                     <th class="p-2.5 text-center">Present Ratio</th>
                                 </tr>
@@ -4647,15 +4647,15 @@
                     <td class="p-2.5 text-center font-bold">${cur ? r.totalParcels.toLocaleString() : '-'}</td>
                     <td class="p-2.5 text-center">${cur ? r.totalAssign.toLocaleString() : '-'}</td>
                     <td class="p-2.5 text-center">${cur ? r.assignRate : '-'}</td>
+                    <td class="p-2.5 text-center">${cur ? r.officeHold.toLocaleString() : '-'}</td>
+                    <td class="p-2.5 text-center">${cur ? r.officeHoldPct : '-'}</td>
                     <td class="p-2.5 text-center">${cur ? r.totalDA.toLocaleString() : '-'}</td>
                     <td class="p-2.5 text-center">${cur ? r.presentDA.toLocaleString() : '-'}</td>
                     <td class="p-2.5 text-center">${cur ? r.attendance : '-'}</td>
-                    <td class="p-2.5 text-center">${cur ? r.officeHold.toLocaleString() : '-'}</td>
-                    <td class="p-2.5 text-center">${cur ? r.officeHoldPct : '-'}</td>
                 </tr>`;
             }).join('');
             const officeHoldRatio = totalParcels > 0 ? Math.round((officeHold / totalParcels) * 100) : 0;
-            morningFoot.innerHTML = `<tr><td class="p-3 sticky left-0 bg-[#0b1329] z-[5]">ALL CURRENT-DAY MORNING TOTAL</td><td colspan="3" class="p-3 text-center text-slate-400">${currentRows.length} hubs</td><td class="p-3 text-center">${totalParcels.toLocaleString()}</td><td class="p-3 text-center">${totalAssign.toLocaleString()}</td><td class="p-3 text-center">${assignRate}%</td><td class="p-3 text-center">${totalDA}</td><td class="p-3 text-center">${presentDA}</td><td class="p-3 text-center">${attendance}%</td><td class="p-3 text-center">${officeHold}</td><td class="p-3 text-center">${officeHoldRatio}%</td></tr>`;
+            morningFoot.innerHTML = `<tr><td class="p-3 sticky left-0 bg-[#0b1329] z-[5]">ALL CURRENT-DAY MORNING TOTAL</td><td colspan="3" class="p-3 text-center text-slate-400">${currentRows.length} hubs</td><td class="p-3 text-center">${totalParcels.toLocaleString()}</td><td class="p-3 text-center">${totalAssign.toLocaleString()}</td><td class="p-3 text-center">${assignRate}%</td><td class="p-3 text-center">${officeHold}</td><td class="p-3 text-center">${officeHoldRatio}%</td><td class="p-3 text-center">${totalDA}</td><td class="p-3 text-center">${presentDA}</td><td class="p-3 text-center">${attendance}%</td></tr>`;
 
             closingBody.innerHTML = rows.map(r => {
                 const cur = r.isCurrent;
