@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Temporary Testing Site</title>
+    <title>Narsingdi Cluster & Hub Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
@@ -967,13 +967,13 @@
                     </tr>
                     <tr>
                         <td class="text-left">Van In time</td>
-                        <td colspan="2"><input type="text" id="m_vanInTime" value="10:14 AM"></td>
+                        <td colspan="2"><input type="text" id="m_vanInTime" value=""></td>
                         <td class="text-left">Total Number of DA</td>
                         <td colspan="2"><input type="number" id="m_totalDA" value="16"></td>
                     </tr>
                     <tr>
                         <td class="text-left">Last Agent Dispatch Time</td>
-                        <td colspan="2"><input type="text" id="m_dispatchTime" value="11:30 AM"></td>
+                        <td colspan="2"><input type="text" id="m_dispatchTime" value=""></td>
                         <td class="text-left">Present DA</td>
                         <td><input type="number" id="m_presentDA" value="13"></td>
                         <td class="text-center c-readonly" id="m_presentDAPct">-</td>
@@ -1193,21 +1193,21 @@
                         <td class="text-left">Field Hold</td>
                         <td><input type="number" id="fieldHold" value="0"></td>
                         <td class="text-center c-muted" id="fieldHoldPct">-</td>
-                        <td colspan="2"><input type="text" id="prevRatioInput1" class="prev-ratio-input" data-target="deliveredPct" data-comp="prevComparisonVal1" readonly tabindex="-1" title="Auto-filled from the exact previous day saved Closing Report"></td>
+                        <td colspan="2"><input type="text" id="prevRatioInput1" class="prev-ratio-input" data-target="deliveredPct" data-comp="prevComparisonVal1" title="Auto-filled from the exact previous day saved Closing Report; you can edit if needed"></td>
                         <td colspan="2" class="text-center" id="prevComparisonVal1">-</td>
                     </tr>
                     <tr>
                         <td class="text-left">Field Return</td>
                         <td><input type="number" id="fieldReturn" value="0"></td>
                         <td class="text-center c-muted" id="fieldReturnPct">-</td>
-                        <td colspan="2"><input type="text" id="prevRatioInput2" class="prev-ratio-input" data-target="fieldHoldPct" data-comp="prevComparisonVal2" readonly tabindex="-1" title="Auto-filled from the exact previous day saved Closing Report"></td>
+                        <td colspan="2"><input type="text" id="prevRatioInput2" class="prev-ratio-input" data-target="fieldHoldPct" data-comp="prevComparisonVal2" title="Auto-filled from the exact previous day saved Closing Report; you can edit if needed"></td>
                         <td colspan="2" class="text-center" id="prevComparisonVal2">-</td>
                     </tr>
                     <tr>
                         <td class="text-left">Total Hold</td>
                         <td class="text-center c-muted" id="totalHold">0</td>
                         <td class="text-center c-muted" id="totalHoldPct">-</td>
-                        <td colspan="2"><input type="text" id="prevRatioInput3" class="prev-ratio-input" data-target="fieldReturnPct" data-comp="prevComparisonVal3" readonly tabindex="-1" title="Auto-filled from the exact previous day saved Closing Report"></td>
+                        <td colspan="2"><input type="text" id="prevRatioInput3" class="prev-ratio-input" data-target="fieldReturnPct" data-comp="prevComparisonVal3" title="Auto-filled from the exact previous day saved Closing Report; you can edit if needed"></td>
                         <td colspan="2" class="text-center" id="prevComparisonVal3">-</td>
                     </tr>
                     <tr>
@@ -3502,10 +3502,17 @@
             updateAllComparisons();
         }
 
+        function formatCurrentTime12Hour(date = new Date()) {
+            let hours = date.getHours();
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            hours = hours % 12 || 12;
+            return `${String(hours).padStart(2, '0')}:${minutes} ${ampm}`;
+        }
+
         function resetReportFormToDefault() {
             const today = new Date();
             const formattedDate = String(today.getDate()).padStart(2, '0') + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + today.getFullYear();
-
             document.querySelectorAll('#hubReportView input[type="number"]:not([readonly])').forEach(input => {
                 input.value = 0;
             });
@@ -3513,10 +3520,10 @@
             document.querySelectorAll('#hubReportView input[type="text"]:not([readonly])').forEach(input => {
                 if (input.id === 'm_reportDate') {
                     input.value = formattedDate;
-                } else if (input.id === 'm_vanInTime') {
-                    input.value = '10:00 AM';
-                } else if (input.id === 'm_dispatchTime') {
-                    input.value = '11:00 AM';
+                } else if (input.id === 'm_vanInTime' || input.id === 'm_dispatchTime') {
+                    // These times are intentionally blank on Refresh Form.
+                    // The user enters Van In Time and Last Agent Dispatch Time manually.
+                    input.value = '';
                 } else {
                     input.value = '';
                 }
@@ -4986,10 +4993,9 @@
             const agentProd = presDA > 0 ? Math.round(delivered / presDA) : 0;
             document.getElementById('agentProductivity').innerText = agentProd;
 
-            // Previous Day Ratio must always come from the exact previous calendar
-            // day's saved Closing Report for this Hub. Never calculate it from
-            // today's values and never fall back to another date.
-            syncPreviousDayRatios();
+            // Previous Day Ratio is auto-filled from the exact previous calendar
+            // day when the report date / Hub changes. It remains user-editable,
+            // so normal field recalculation must not overwrite a manual edit.
             updateAllComparisons();
         }
 
@@ -5386,15 +5392,30 @@
             document.querySelectorAll('#hubReportView input, #hubReportView select').forEach(el => {
                 el.addEventListener('input', () => {
                     calculateMorningFormulas();
+                    // Report Date changes must refresh the Previous Ratio from
+                    // that date's exact previous day. Other inputs must not
+                    // overwrite a manually edited Previous Ratio.
+                    if (el.id === 'm_reportDate') {
+                        syncPreviousDayRatios();
+                        updateAllComparisons();
+                    }
                     saveCurrentHubReportData();
                 });
             });
 
             document.querySelectorAll('.prev-ratio-input').forEach(input => {
-                // These fields are readonly. Their values are refreshed only from
-                // the exact previous day's saved Closing Report snapshot.
-                input.addEventListener('keydown', e => e.preventDefault());
-                input.addEventListener('input', e => e.preventDefault());
+                // Previous Ratio is auto-filled from the exact previous day's
+                // saved Closing Report, but the user may manually edit it when
+                // needed. Normal input handling recalculates the comparison and
+                // saves the edited value without overwriting it.
+                input.addEventListener('input', () => {
+                    updateAllComparisons();
+                    saveCurrentHubReportData();
+                });
+                input.addEventListener('blur', () => {
+                    updateAllComparisons();
+                    saveCurrentHubReportData();
+                });
             });
 
             document.querySelectorAll('input[type="number"]:not([readonly])').forEach(input => {
@@ -5425,8 +5446,13 @@
                 saveState();
                 resetReportFormToDefault();
                 calculateMorningFormulas();
+                // Refresh starts a fresh report day. After the report date is
+                // reset, immediately load the exact previous calendar day's
+                // saved Closing Report ratios into Previous Ratio.
+                syncPreviousDayRatios();
+                updateAllComparisons();
                 saveCurrentHubReportData();
-                showToast('Report form cleared for this Hub!');
+                showToast('Report form refreshed. Previous Day Ratio loaded automatically.');
             });
 
             document.addEventListener('wheel', function(e) {
