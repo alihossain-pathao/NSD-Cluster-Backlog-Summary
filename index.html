@@ -974,7 +974,6 @@
                             <thead class="bg-[#0b1329] text-slate-300 uppercase font-black border-b border-slate-700">
                                 <tr>
                                     <th class="p-2.5 sticky left-0 bg-[#0b1329] z-10">Hub</th>
-                                    <th class="p-2.5 text-center">Report Date</th>
                                     <th class="p-2.5 text-center">Van In</th>
                                     <th class="p-2.5 text-center">Last Dispatch</th>
                                     <th class="p-2.5 text-center">Elapsed</th>
@@ -982,9 +981,10 @@
                                     <th class="p-2.5 text-center">Assign</th>
                                     <th class="p-2.5 text-center">Assign Rate</th>
                                     <th class="p-2.5 text-center">Total DA</th>
-                                    <th class="p-2.5 text-center">Present DA</th>
-                                    <th class="p-2.5 text-center">Attendance</th>
-                                    <th class="p-2.5 text-center">On Training</th>
+                                    <th class="p-2.5 text-center">Office Hold</th>
+                                    <th class="p-2.5 text-center">Office Hold Ratio</th>
+                                    <th class="p-2.5 text-center">Present</th>
+                                    <th class="p-2.5 text-center">Present Ratio</th>
                                 </tr>
                             </thead>
                             <tbody id="currentDayMorningReportBody" class="divide-y divide-slate-800/80"></tbody>
@@ -4555,6 +4555,7 @@
                     totalParcels, totalAssign,
                     assignRate: pct(totalAssign, totalParcels),
                     totalDA, presentDA, attendance: pct(presentDA, totalDA),
+                    officeHold: n('m_officeHold'), officeHoldPct: pct(n('m_officeHold'), totalParcels),
                     delivered, deliveryPct: pct(delivered, onTheWay),
                     fieldHold, fieldHoldPct: pct(fieldHold, onTheWay),
                     fieldReturn, fieldReturnPct: pct(fieldReturn, onTheWay),
@@ -4608,7 +4609,7 @@
                 card('Assign Rate', assignRate + '%', '🚚'),
                 card('DA Attendance', attendance + '%', '👤'),
                 card('Present DA', presentDA + ' / ' + totalDA, '✓'),
-                card('On Training', training, '🎓')
+                card('Office Hold', officeHold.toLocaleString(), '🏢')
             ].join('');
             if (closingCards) closingCards.innerHTML = [
                 card('Hubs', currentRows.length + ' / ' + rows.length, '🏢'),
@@ -4626,8 +4627,7 @@
             morningBody.innerHTML = rows.map(r => {
                 const cur = r.isCurrent;
                 return `<tr class="hover:bg-slate-800/30 transition">
-                    <td class="p-2.5 font-black text-white sticky left-0 bg-[#131d36] z-[5]">${escapeHtml(r.hub.name)} <span class="text-[9px] text-slate-500">(${escapeHtml(r.hub.id)})</span></td>
-                    <td class="p-2.5 text-center ${cur ? 'text-emerald-300' : 'text-slate-500'}">${escapeHtml(r.rawDate || '-')}</td>
+                    <td class="p-2.5 font-black text-white sticky left-0 bg-[#131d36] z-[5]">${escapeHtml((String(r.hub.name || 'HUB').trim().replace(/\s+/g, ' ').replace(/\s*HUB$/i, '') + ' Hub'))}</td>
                     <td class="p-2.5 text-center">${cur ? escapeHtml(r.vanIn) : '-'}</td>
                     <td class="p-2.5 text-center">${cur ? escapeHtml(r.dispatch) : '-'}</td>
                     <td class="p-2.5 text-center">${cur ? escapeHtml(elapsed(r.fields)) : '-'}</td>
@@ -4635,17 +4635,19 @@
                     <td class="p-2.5 text-center">${cur ? r.totalAssign.toLocaleString() : '-'}</td>
                     <td class="p-2.5 text-center">${cur ? r.assignRate : '-'}</td>
                     <td class="p-2.5 text-center">${cur ? r.totalDA.toLocaleString() : '-'}</td>
+                    <td class="p-2.5 text-center">${cur ? r.officeHold.toLocaleString() : '-'}</td>
+                    <td class="p-2.5 text-center">${cur ? r.officeHoldPct : '-'}</td>
                     <td class="p-2.5 text-center">${cur ? r.presentDA.toLocaleString() : '-'}</td>
                     <td class="p-2.5 text-center">${cur ? r.attendance : '-'}</td>
-                    <td class="p-2.5 text-center">${cur ? (Number(r.fields.m_onTrainingDA) || 0).toLocaleString() : '-'}</td>
                 </tr>`;
             }).join('');
-            morningFoot.innerHTML = `<tr><td class="p-3 sticky left-0 bg-[#0b1329] z-[5]">ALL CURRENT-DAY MORNING TOTAL</td><td colspan="4" class="p-3 text-center text-slate-400">${currentRows.length} hubs</td><td class="p-3 text-center">${totalParcels.toLocaleString()}</td><td class="p-3 text-center">${totalAssign.toLocaleString()}</td><td class="p-3 text-center">${assignRate}%</td><td class="p-3 text-center">${totalDA}</td><td class="p-3 text-center">${presentDA}</td><td class="p-3 text-center">${attendance}%</td><td class="p-3 text-center">${training}</td></tr>`;
+            const officeHoldRatio = totalParcels > 0 ? Math.round((officeHold / totalParcels) * 100) : 0;
+            morningFoot.innerHTML = `<tr><td class="p-3 sticky left-0 bg-[#0b1329] z-[5]">ALL CURRENT-DAY MORNING TOTAL</td><td colspan="3" class="p-3 text-center text-slate-400">${currentRows.length} hubs</td><td class="p-3 text-center">${totalParcels.toLocaleString()}</td><td class="p-3 text-center">${totalAssign.toLocaleString()}</td><td class="p-3 text-center">${assignRate}%</td><td class="p-3 text-center">${totalDA}</td><td class="p-3 text-center">${officeHold}</td><td class="p-3 text-center">${officeHoldRatio}%</td><td class="p-3 text-center">${presentDA}</td><td class="p-3 text-center">${attendance}%</td></tr>`;
 
             closingBody.innerHTML = rows.map(r => {
                 const cur = r.isCurrent;
                 return `<tr class="hover:bg-slate-800/30 transition">
-                    <td class="p-2.5 font-black text-white sticky left-0 bg-[#131d36] z-[5]">${escapeHtml(r.hub.name)} <span class="text-[9px] text-slate-500">(${escapeHtml(r.hub.id)})</span></td>
+                    <td class="p-2.5 font-black text-white sticky left-0 bg-[#131d36] z-[5]">${escapeHtml((String(r.hub.name || 'HUB').trim().replace(/\s+/g, ' ').replace(/\s*HUB$/i, '') + ' Hub'))}</td>
                     <td class="p-2.5 text-center ${cur ? 'text-emerald-300' : 'text-slate-500'}">${escapeHtml(r.rawDate || '-')}</td>
                     <td class="p-2.5 text-center">${cur ? (Number(r.fields.totalDelivered) || (r.delivered + r.fieldHold + r.fieldReturn + r.officeHold + r.capShort)).toLocaleString() : '-'}</td>
                     <td class="p-2.5 text-center">${cur ? r.onTheWay.toLocaleString() : '-'}</td>
