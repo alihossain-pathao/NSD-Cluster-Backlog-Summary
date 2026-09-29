@@ -236,6 +236,7 @@
 
         .excel-table input, .excel-table select { width: 100%; height: 100%; border: none; outline: none; background: transparent; font-weight: 700; font-size: 10px; font-family: inherit; color: #0f172a; padding: 0; margin: 0; text-align: center; line-height: 23px; }
         .excel-table input[readonly] { background-color: #f1f5f9; color: #000000 !important; cursor: not-allowed; font-weight: 800; }
+        .excel-table .prev-ratio-input[readonly] { background-color: #f1f5f9; color: #0f172a !important; cursor: default; font-weight: 800; }
         .excel-table select { background-color: #ffffff; border-radius: 3px; border: 1px solid #94a3b8; height: 18px; font-size: 9.5px; cursor: pointer; font-weight: 700; }
         .excel-table input:focus:not([readonly]), .excel-table select:focus { background-color: #e0f2fe; box-shadow: inset 0 0 0 1.5px #0284c7; }
 
@@ -1254,21 +1255,21 @@
                         <td class="text-left">Field Hold</td>
                         <td><input type="number" id="fieldHold" value="0"></td>
                         <td class="text-center c-muted" id="fieldHoldPct">-</td>
-                        <td colspan="2"><input type="text" id="prevRatioInput1" class="prev-ratio-input" data-target="deliveredPct" data-comp="prevComparisonVal1"></td>
+                        <td colspan="2"><input type="text" id="prevRatioInput1" class="prev-ratio-input" data-target="deliveredPct" data-comp="prevComparisonVal1" readonly title="Auto from previous day's Delivered ratio"></td>
                         <td colspan="2" class="text-center" id="prevComparisonVal1">-</td>
                     </tr>
                     <tr>
                         <td class="text-left">Field Return</td>
                         <td><input type="number" id="fieldReturn" value="0"></td>
                         <td class="text-center c-muted" id="fieldReturnPct">-</td>
-                        <td colspan="2"><input type="text" id="prevRatioInput2" class="prev-ratio-input" data-target="fieldHoldPct" data-comp="prevComparisonVal2"></td>
+                        <td colspan="2"><input type="text" id="prevRatioInput2" class="prev-ratio-input" data-target="fieldHoldPct" data-comp="prevComparisonVal2" readonly title="Auto from previous day's Field Hold ratio"></td>
                         <td colspan="2" class="text-center" id="prevComparisonVal2">-</td>
                     </tr>
                     <tr>
                         <td class="text-left">Total Hold</td>
                         <td class="text-center c-muted" id="totalHold">0</td>
                         <td class="text-center c-muted" id="totalHoldPct">-</td>
-                        <td colspan="2"><input type="text" id="prevRatioInput3" class="prev-ratio-input" data-target="fieldReturnPct" data-comp="prevComparisonVal3"></td>
+                        <td colspan="2"><input type="text" id="prevRatioInput3" class="prev-ratio-input" data-target="fieldReturnPct" data-comp="prevComparisonVal3" readonly title="Auto from previous day's Field Return ratio"></td>
                         <td colspan="2" class="text-center" id="prevComparisonVal3">-</td>
                     </tr>
                     <tr>
@@ -3460,7 +3461,7 @@
 
             // Save calculated Morning Dispatch values too, so the dashboard
             // can read the exact numbers shown in the report after refresh.
-            const calculatedIds = ['m_totalParcels','m_totalAssign','totalHold','totalCollection','delivered','fieldReturn','totalPending'];
+            const calculatedIds = ['m_totalParcels','m_totalAssign','totalAttempt','onTheWay','totalHold','totalCollection','delivered','fieldHold','fieldReturn','totalPending'];
             calculatedIds.forEach(id => {
                 const el = document.getElementById(id);
                 if (el) reportData[id] = el.value ?? el.innerText ?? '0';
@@ -3483,6 +3484,7 @@
                 resetReportFormToDefault();
             }
             calculateMorningFormulas();
+            updatePreviousDayRatios();
         }
 
         function resetReportFormToDefault() {
@@ -3504,6 +3506,7 @@
                     input.value = '';
                 }
             });
+            document.querySelectorAll('.prev-ratio-input').forEach(input => { input.value = ''; });
 
             document.querySelectorAll('#hubReportView select').forEach(sel => {
                 sel.selectedIndex = 0;
@@ -3529,7 +3532,7 @@
             hub.daTotal = daTotal;
             hub.deliveryRate = totalVol > 0 ? ((delivered / totalVol) * 100).toFixed(1) + '%' : '0%';
 
-            recordHubReportHistory(hubId, hub);
+            recordHubReportHistory(hubId, hub, data);
             renderDashboard();
             cloudSyncHubList();
         }
@@ -3540,19 +3543,91 @@
             return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
         }
 
-        function recordHubReportHistory(hubId, hub) {
+        function parseReportDateISO(value) {
+            const raw = String(value || '').trim();
+            if (!raw) return '';
+            const m = raw.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})$/);
+            if (m) {
+                const day = Number(m[1]);
+                const month = Number(m[2]);
+                const year = Number(m[3]);
+                const d = new Date(year, month - 1, day);
+                if (d.getFullYear() === year && d.getMonth() === month - 1 && d.getDate() === day) {
+                    return year + '-' + String(month).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+                }
+            }
+            const parsed = new Date(raw);
+            if (!isNaN(parsed.getTime())) {
+                return parsed.getFullYear() + '-' + String(parsed.getMonth() + 1).padStart(2, '0') + '-' + String(parsed.getDate()).padStart(2, '0');
+            }
+            return '';
+        }
+
+        function getPreviousISO(iso) {
+            const m = String(iso || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+            if (!m) return '';
+            const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]) - 1);
+            return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+        }
+
+        function ratioFromHistory(entry, field) {
+            if (!entry) return '';
+            const stored = Number(entry[field + 'Ratio']);
+            if (Number.isFinite(stored)) return Math.round(stored) + '%';
+
+            const value = Number(entry[field]);
+            const denominator = Number(entry.onTheWay);
+            if (Number.isFinite(value) && denominator > 0) return Math.round((value / denominator) * 100) + '%';
+            return '';
+        }
+
+        function updatePreviousDayRatios() {
+            const hubId = currentActiveHubId;
+            if (!hubId) return;
+
+            const reportDateISO = parseReportDateISO(document.getElementById('m_reportDate')?.value) || getTodayISO();
+            const previousISO = getPreviousISO(reportDateISO);
+            const previous = previousISO ? (hubReportHistory[hubId]?.[previousISO] || null) : null;
+
+            const values = {
+                prevRatioInput1: ratioFromHistory(previous, 'delivered'),
+                prevRatioInput2: ratioFromHistory(previous, 'fieldHold'),
+                prevRatioInput3: ratioFromHistory(previous, 'fieldReturn')
+            };
+
+            Object.entries(values).forEach(([id, value]) => {
+                const el = document.getElementById(id);
+                if (el) el.value = value;
+            });
+        }
+
+        function recordHubReportHistory(hubId, hub, reportData = {}) {
             if (!hubReportHistory[hubId]) hubReportHistory[hubId] = {};
-            const todayISO = getTodayISO();
-            hubReportHistory[hubId][todayISO] = {
-                date: todayISO,
+
+            const reportDateISO = parseReportDateISO(reportData.m_reportDate) || getTodayISO();
+            const onTheWay = Number(reportData.onTheWay) || 0;
+            const delivered = Number(reportData.delivered) || 0;
+            const fieldHold = Number(reportData.fieldHold) || 0;
+            const fieldReturn = Number(reportData.fieldReturn) || 0;
+
+            hubReportHistory[hubId][reportDateISO] = {
+                date: reportDateISO,
                 totalVolume: hub.totalVolume || 0,
-                delivered: hub.delivered || 0,
+                delivered: delivered,
+                fieldHold: fieldHold,
+                fieldReturn: fieldReturn,
+                onTheWay: onTheWay,
+                deliveredRatio: onTheWay > 0 ? Math.round((delivered / onTheWay) * 100) : null,
+                fieldHoldRatio: onTheWay > 0 ? Math.round((fieldHold / onTheWay) * 100) : null,
+                fieldReturnRatio: onTheWay > 0 ? Math.round((fieldReturn / onTheWay) * 100) : null,
                 totalHold: hub.totalHold || 0,
                 collection: hub.collection || 0,
                 daPresent: hub.daPresent || 0,
                 daTotal: hub.daTotal || hub.daPresent || 0,
                 savedAt: new Date().toISOString()
             };
+
+            updatePreviousDayRatios();
         }
 
         function getPeriodRange(period) {
@@ -5020,6 +5095,7 @@
             const agentProd = presDA > 0 ? Math.round(delivered / presDA) : 0;
             document.getElementById('agentProductivity').innerText = agentProd;
 
+            updatePreviousDayRatios();
             updateAllComparisons();
         }
 
@@ -5370,15 +5446,6 @@
 
             document.querySelectorAll('.prev-ratio-input').forEach(input => {
                 input.addEventListener('input', calculateClosingReport);
-                input.addEventListener('blur', function() {
-                    let val = this.value.replace(/%/g, '').trim();
-                    if (val !== '' && !isNaN(val)) this.value = val + '%';
-                    calculateClosingReport();
-                    saveCurrentHubReportData();
-                });
-                input.addEventListener('focus', function() {
-                    this.value = this.value.replace(/%/g, '').trim();
-                });
             });
 
             document.querySelectorAll('input[type="number"]:not([readonly])').forEach(input => {
