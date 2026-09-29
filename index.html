@@ -1089,6 +1089,10 @@
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
                         <span>Refresh Form</span>
                     </button>
+                    <button type="button" class="btn-action btn-refresh" id="btnPreviousDay" title="View the exact previous day's saved report">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
+                        <span>Previous Day</span>
+                    </button>
                     <button type="button" class="btn-action btn-undo" id="btnUndo">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>
                         <span>Undo</span>
@@ -2720,7 +2724,92 @@
             showToast(`Loaded report for ${hubName}`);
         }
 
+        let previousDayReportMode = false;
+        let previousDayReturnSnapshot = null;
+
+        function setReportFormViewOnly(isViewOnly) {
+            document.querySelectorAll('#hubReportView input, #hubReportView select').forEach(el => {
+                if (isViewOnly) {
+                    if (!el.dataset.previousReadonly) el.dataset.previousReadonly = el.readOnly ? '1' : '0';
+                    if (el.tagName === 'INPUT') el.readOnly = true;
+                    else el.disabled = true;
+                } else {
+                    if (el.tagName === 'INPUT') el.readOnly = el.dataset.previousReadonly === '1';
+                    else el.disabled = false;
+                }
+            });
+        }
+
+        function getHistoryEntryForReportDate(hubId, isoDate) {
+            const history = hubReportHistory?.[hubId] || {};
+            if (history[isoDate]) return history[isoDate];
+            return Object.values(history).find(entry => entry && entry.date === isoDate) || null;
+        }
+
+        function showPreviousDayReport() {
+            if (!currentActiveHubId) return;
+
+            if (previousDayReportMode) {
+                if (previousDayReturnSnapshot) {
+                    Object.keys(previousDayReturnSnapshot).forEach(id => {
+                        const el = document.getElementById(id);
+                        if (el) el.value = previousDayReturnSnapshot[id];
+                    });
+                }
+                previousDayReturnSnapshot = null;
+                previousDayReportMode = false;
+                setReportFormViewOnly(false);
+                document.querySelector('#btnPreviousDay span').textContent = 'Previous Day';
+                document.getElementById('m_reportDate').title = '';
+                calculateMorningFormulas();
+                syncPreviousDayRatios();
+                updateAllComparisons();
+                showToast('Current report restored');
+                return;
+            }
+
+            const currentISO = parseReportDateToISO(document.getElementById('m_reportDate')?.value);
+            if (!currentISO) {
+                showToast('Valid Report Date is required');
+                return;
+            }
+
+            const previousISO = getPreviousReportDateISO(currentISO);
+            const previous = getHistoryEntryForReportDate(currentActiveHubId, previousISO);
+
+            if (!previous || !previous.reportData || Object.keys(previous.reportData).length === 0) {
+                showToast(`Previous Day report (${previousISO}) is not saved for this Hub`);
+                return;
+            }
+
+            previousDayReturnSnapshot = {};
+            document.querySelectorAll('#hubReportView input, #hubReportView select').forEach(el => {
+                if (el.id) previousDayReturnSnapshot[el.id] = el.value;
+            });
+
+            Object.keys(previous.reportData).forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.value = previous.reportData[id];
+            });
+
+            previousDayReportMode = true;
+            setReportFormViewOnly(true);
+            document.querySelector('#btnPreviousDay span').textContent = 'Current Day';
+            document.getElementById('m_reportDate').title = `Previous Day Report: ${previousISO}`;
+            calculateMorningFormulas();
+            syncPreviousDayRatios();
+            updateAllComparisons();
+            showToast(`Showing Previous Day Report: ${previous.reportDate || previousISO}`);
+        }
+
         function closeReportView() {
+            if (previousDayReportMode) {
+                previousDayReportMode = false;
+                previousDayReturnSnapshot = null;
+                setReportFormViewOnly(false);
+                const previousBtn = document.querySelector('#btnPreviousDay span');
+                if (previousBtn) previousBtn.textContent = 'Previous Day';
+            }
             document.getElementById('hubReportView').classList.add('hidden');
             document.getElementById('hubDashboardView').classList.remove('hidden');
             window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -3483,6 +3572,11 @@
                 fieldReturn: document.getElementById('fieldReturnPct')?.innerText?.trim() || '-'
             };
 
+            const currentFormSnapshot = {};
+            document.querySelectorAll('#hubReportView input, #hubReportView select').forEach(el => {
+                if (el.id) currentFormSnapshot[el.id] = el.value;
+            });
+
             hubReportHistory[hubId][reportDateISO] = {
                 date: reportDateISO,
                 reportDate: rawReportDate,
@@ -3493,6 +3587,7 @@
                 daPresent: hub.daPresent || 0,
                 daTotal: hub.daTotal || hub.daPresent || 0,
                 closingRatios,
+                reportData: currentFormSnapshot,
                 savedAt: new Date().toISOString()
             };
         }
@@ -5319,9 +5414,14 @@
                 el.addEventListener('focus', saveState);
             });
 
-            document.getElementById('btnUndo')?.addEventListener('click', restoreState);
+            document.getElementById('btnUndo')?.addEventListener('click', function() {
+                if (previousDayReportMode) { showToast('Click Current Day first'); return; }
+                restoreState();
+            });
+            document.getElementById('btnPreviousDay')?.addEventListener('click', showPreviousDayReport);
 
             document.getElementById('btnRefresh')?.addEventListener('click', function() {
+                if (previousDayReportMode) { showToast('Click Current Day first'); return; }
                 saveState();
                 resetReportFormToDefault();
                 calculateMorningFormulas();
