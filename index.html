@@ -4591,9 +4591,22 @@
             const attendance = totalDA > 0 ? Math.round(presentDA / totalDA * 100) : 0;
             const deliveryBase = currentRows.reduce((a, r) => a + r.delivered + r.fieldHold + r.fieldReturn, 0);
             const deliveryRate = deliveryBase > 0 ? Math.round(totalDelivered / deliveryBase * 100) : 0;
+            const parseClockMinutes = value => {
+                const m = String(value || '').trim().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?$/i);
+                if (!m) return null;
+                let h = Number(m[1]), min = Number(m[2]);
+                if (m[3]) { const ap = m[3].toUpperCase(); if (ap === 'AM' && h === 12) h = 0; if (ap === 'PM' && h !== 12) h += 12; }
+                return h * 60 + min;
+            };
             const elapsed = fields => {
-                const v = String(fields.m_elapsedTime || '').trim();
-                return v || '-';
+                const saved = String(fields.m_elapsedTime || '').trim();
+                if (saved && saved !== '0 Hours 0 Minutes') return saved;
+                const start = parseClockMinutes(fields.m_vanInTime);
+                const end = parseClockMinutes(fields.m_dispatchTime);
+                if (start === null || end === null) return '-';
+                let diff = end - start;
+                if (diff < 0) diff += 24 * 60;
+                return Math.floor(diff / 60) + ' Hours ' + (diff % 60) + ' Minutes';
             };
             const training = currentRows.reduce((a, r) => a + (Number(r.fields.m_onTrainingDA) || 0), 0);
             const officeHold = sum('officeHold');
@@ -4627,7 +4640,7 @@
             morningBody.innerHTML = rows.map(r => {
                 const cur = r.isCurrent;
                 return `<tr class="hover:bg-slate-800/30 transition">
-                    <td class="p-2.5 font-black text-white sticky left-0 bg-[#131d36] z-[5]">${escapeHtml((String(r.hub.name || 'HUB').trim().replace(/\s+/g, ' ').replace(/\s*HUB$/i, '') + ' Hub'))}</td>
+                    <td class="p-2.5 font-black text-white sticky left-0 bg-[#131d36] z-[5]">${escapeHtml((String(r.hub.name || 'HUB').trim().replace(/\s+/g, ' ').replace(/Narsingdi-\s*Monohardi\s+Hub/i, 'Narsingdi-Monohardi')))}</td>
                     <td class="p-2.5 text-center">${cur ? escapeHtml(r.vanIn) : '-'}</td>
                     <td class="p-2.5 text-center">${cur ? escapeHtml(r.dispatch) : '-'}</td>
                     <td class="p-2.5 text-center">${cur ? escapeHtml(elapsed(r.fields)) : '-'}</td>
@@ -4635,14 +4648,14 @@
                     <td class="p-2.5 text-center">${cur ? r.totalAssign.toLocaleString() : '-'}</td>
                     <td class="p-2.5 text-center">${cur ? r.assignRate : '-'}</td>
                     <td class="p-2.5 text-center">${cur ? r.totalDA.toLocaleString() : '-'}</td>
-                    <td class="p-2.5 text-center">${cur ? r.officeHold.toLocaleString() : '-'}</td>
-                    <td class="p-2.5 text-center">${cur ? r.officeHoldPct : '-'}</td>
                     <td class="p-2.5 text-center">${cur ? r.presentDA.toLocaleString() : '-'}</td>
                     <td class="p-2.5 text-center">${cur ? r.attendance : '-'}</td>
+                    <td class="p-2.5 text-center">${cur ? r.officeHold.toLocaleString() : '-'}</td>
+                    <td class="p-2.5 text-center">${cur ? r.officeHoldPct : '-'}</td>
                 </tr>`;
             }).join('');
             const officeHoldRatio = totalParcels > 0 ? Math.round((officeHold / totalParcels) * 100) : 0;
-            morningFoot.innerHTML = `<tr><td class="p-3 sticky left-0 bg-[#0b1329] z-[5]">ALL CURRENT-DAY MORNING TOTAL</td><td colspan="3" class="p-3 text-center text-slate-400">${currentRows.length} hubs</td><td class="p-3 text-center">${totalParcels.toLocaleString()}</td><td class="p-3 text-center">${totalAssign.toLocaleString()}</td><td class="p-3 text-center">${assignRate}%</td><td class="p-3 text-center">${totalDA}</td><td class="p-3 text-center">${officeHold}</td><td class="p-3 text-center">${officeHoldRatio}%</td><td class="p-3 text-center">${presentDA}</td><td class="p-3 text-center">${attendance}%</td></tr>`;
+            morningFoot.innerHTML = `<tr><td class="p-3 sticky left-0 bg-[#0b1329] z-[5]">ALL CURRENT-DAY MORNING TOTAL</td><td colspan="3" class="p-3 text-center text-slate-400">${currentRows.length} hubs</td><td class="p-3 text-center">${totalParcels.toLocaleString()}</td><td class="p-3 text-center">${totalAssign.toLocaleString()}</td><td class="p-3 text-center">${assignRate}%</td><td class="p-3 text-center">${totalDA}</td><td class="p-3 text-center">${presentDA}</td><td class="p-3 text-center">${attendance}%</td><td class="p-3 text-center">${officeHold}</td><td class="p-3 text-center">${officeHoldRatio}%</td></tr>`;
 
             closingBody.innerHTML = rows.map(r => {
                 const cur = r.isCurrent;
