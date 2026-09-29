@@ -1004,9 +1004,7 @@
                             <thead class="bg-[#0b1329] text-slate-300 uppercase font-black border-b border-slate-700">
                                 <tr>
                                     <th class="p-2.5 sticky left-0 bg-[#0b1329] z-10">Hub</th>
-                                    <th class="p-2.5 text-center">Report Date</th>
-                                    <th class="p-2.5 text-center">Total Parcel to Attempt</th>
-                                    <th class="p-2.5 text-center">On Way</th>
+                                                                                                            <th class="p-2.5 text-center">Attempt For Delivery</th>
                                     <th class="p-2.5 text-center">Delivered</th>
                                     <th class="p-2.5 text-center">Delivered %</th>
                                     <th class="p-2.5 text-center">Field Hold</th>
@@ -1014,8 +1012,7 @@
                                     <th class="p-2.5 text-center">Field Return</th>
                                     <th class="p-2.5 text-center">Field Return %</th>
                                     <th class="p-2.5 text-center">Office Hold</th>
-                                    <th class="p-2.5 text-center">Capacity Shortage</th>
-                                    <th class="p-2.5 text-center">Total Hold</th>
+                                                                        <th class="p-2.5 text-center">Total Hold</th>
                                     <th class="p-2.5 text-center">Collection</th>
                                 </tr>
                             </thead>
@@ -1148,7 +1145,7 @@
                         <td class="text-center c-readonly" id="m_capShortPct">-</td>
                     </tr>
                     <tr class="c-teal-assign">
-                        <td colspan="4" class="text-center" style="color:#ffffff;">Total Assign For Delivery</td>
+                        <td colspan="4" class="text-center" style="color:#ffffff;">Assign For Delivery</td>
                         <td colspan="2" class="text-center" style="color:#ffffff;" id="m_totalAssign">0</td>
                     </tr>
                 </table>
@@ -1265,7 +1262,7 @@
                         <td colspan="2"><input type="number" id="nightPayment" value="0"></td>
                     </tr>
                     <tr>
-                        <td class="text-left c-dark-bar" style="color:#fff;">On the Way to Deliver</td>
+                        <td class="text-left c-dark-bar" style="color:#fff;">Assign For Delivery</td>
                         <td class="text-center c-dark-bar" style="color:#fff;" id="onTheWay">0</td>
                         <td class="text-center c-dark-bar" style="color:#fff;">Ratio</td>
                         <td colspan="4" class="c-orange-bar">Previous Day Comparison</td>
@@ -4661,8 +4658,6 @@
                 const cur = r.isCurrent;
                 return `<tr class="hover:bg-slate-800/30 transition">
                     <td class="p-2.5 font-black text-white sticky left-0 bg-[#131d36] z-[5]">${escapeHtml((String(r.hub.name || 'HUB').trim().replace(/\s+/g, ' ').replace(/\s*HUB$/i, '') + ' Hub'))}</td>
-                    <td class="p-2.5 text-center ${cur ? 'text-emerald-300' : 'text-slate-500'}">${escapeHtml(r.rawDate || '-')}</td>
-                    <td class="p-2.5 text-center">${cur ? (Number(r.fields.totalDelivered) || (r.delivered + r.fieldHold + r.fieldReturn + r.officeHold + r.capShort)).toLocaleString() : '-'}</td>
                     <td class="p-2.5 text-center">${cur ? r.onTheWay.toLocaleString() : '-'}</td>
                     <td class="p-2.5 text-center font-bold text-emerald-300">${cur ? r.delivered.toLocaleString() : '-'}</td>
                     <td class="p-2.5 text-center">${cur ? r.deliveryPct : '-'}</td>
@@ -4671,12 +4666,11 @@
                     <td class="p-2.5 text-center">${cur ? r.fieldReturn.toLocaleString() : '-'}</td>
                     <td class="p-2.5 text-center">${cur ? r.fieldReturnPct : '-'}</td>
                     <td class="p-2.5 text-center">${cur ? r.officeHold.toLocaleString() : '-'}</td>
-                    <td class="p-2.5 text-center">${cur ? r.capShort.toLocaleString() : '-'}</td>
                     <td class="p-2.5 text-center text-rose-300">${cur ? r.totalHold.toLocaleString() : '-'}</td>
                     <td class="p-2.5 text-center">${cur ? r.collection.toLocaleString() : '-'}</td>
                 </tr>`;
             }).join('');
-            closingFoot.innerHTML = `<tr><td class="p-3 sticky left-0 bg-[#0b1329] z-[5]">ALL CURRENT-DAY CLOSING TOTAL</td><td class="p-3 text-center">${currentRows.length} hubs</td><td class="p-3 text-center">${totalAttempt.toLocaleString()}</td><td class="p-3 text-center">${onWay.toLocaleString()}</td><td class="p-3 text-center text-emerald-300">${totalDelivered.toLocaleString()}</td><td class="p-3 text-center">${deliveryRate}%</td><td class="p-3 text-center text-amber-300">${totalFieldHold.toLocaleString()}</td><td class="p-3 text-center">-</td><td class="p-3 text-center">${totalFieldReturn.toLocaleString()}</td><td class="p-3 text-center">-</td><td class="p-3 text-center">${officeHold.toLocaleString()}</td><td class="p-3 text-center">${capShort.toLocaleString()}</td><td class="p-3 text-center text-rose-300">${totalHold.toLocaleString()}</td><td class="p-3 text-center">${totalCollection.toLocaleString()}</td></tr>`;
+            closingFoot.innerHTML = `<tr><td class="p-3 sticky left-0 bg-[#0b1329] z-[5]">ALL CURRENT-DAY CLOSING TOTAL</td><td class="p-3 text-center">${onWay.toLocaleString()}</td><td class="p-3 text-center text-emerald-300">${totalDelivered.toLocaleString()}</td><td class="p-3 text-center">${deliveryRate}%</td><td class="p-3 text-center text-amber-300">${totalFieldHold.toLocaleString()}</td><td class="p-3 text-center">-</td><td class="p-3 text-center">${totalFieldReturn.toLocaleString()}</td><td class="p-3 text-center">-</td><td class="p-3 text-center">${officeHold.toLocaleString()}</td><td class="p-3 text-center text-rose-300">${totalHold.toLocaleString()}</td><td class="p-3 text-center">${totalCollection.toLocaleString()}</td></tr>`;
         }
 
         function renderDashboard() {
@@ -5425,20 +5419,29 @@
         }
 
         function calculateMorningTime() {
-            const vTimeStr = document.getElementById('m_vanInTime').value;
-            const dTimeStr = document.getElementById('m_dispatchTime').value;
-            
+            const elapsedEl = document.getElementById('m_elapsedTime');
+            const vTimeEl = document.getElementById('m_vanInTime');
+            const dTimeEl = document.getElementById('m_dispatchTime');
+            const vTimeStr = vTimeEl ? vTimeEl.value : '';
+            const dTimeStr = dTimeEl ? dTimeEl.value : '';
+
+            // Always reset the display first. This prevents the previous
+            // day's elapsed value from remaining visible after Refresh Form.
+            if (elapsedEl) elapsedEl.innerText = '0 Hours 0 Minutes';
+
             try {
                 const vDate = parseTime(vTimeStr);
                 const dDate = parseTime(dTimeStr);
-                if (vDate && dDate && dDate >= vDate) {
+                if (elapsedEl && vDate && dDate && dDate >= vDate) {
                     let diffMs = dDate - vDate;
                     let diffMins = Math.floor(diffMs / 60000);
                     let hrs = Math.floor(diffMins / 60);
                     let mins = diffMins % 60;
-                    document.getElementById('m_elapsedTime').innerText = `${hrs} Hours ${mins} Minutes`;
+                    elapsedEl.innerText = `${hrs} Hours ${mins} Minutes`;
                 }
-            } catch(e){}
+            } catch(e) {
+                if (elapsedEl) elapsedEl.innerText = '0 Hours 0 Minutes';
+            }
         }
 
         function parseTime(tStr) {
