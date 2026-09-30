@@ -378,19 +378,23 @@
         /* Hub Management Cards: exact 3-column side-by-side layout; keep all button design/layout unchanged */
         #hubCardsGrid.hub-cards-layout {
             display: grid !important;
-            grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+            grid-template-columns: repeat(3, calc((100% - 20px) / 3)) !important;
             column-gap: 10px !important;
             row-gap: 10px !important;
             width: 100% !important;
+            max-width: none !important;
+            box-sizing: border-box !important;
             align-items: stretch !important;
         }
         #hubCardsGrid.hub-cards-layout > div {
             min-width: 0 !important;
-            width: 100% !important;
+            width: auto !important;
+            max-width: none !important;
+            box-sizing: border-box !important;
         }
         @media (max-width: 1100px) {
             #hubCardsGrid.hub-cards-layout {
-                grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+                grid-template-columns: repeat(3, calc((100% - 20px) / 3)) !important;
             }
         }
         @media (max-width: 850px) {
