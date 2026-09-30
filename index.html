@@ -954,6 +954,9 @@
                     <p class="text-[10px] md:text-xs text-slate-400 font-semibold mt-1">Separate Morning & Closing KPI for all hubs — <span id="currentDayKpiReportDate">-</span></p>
                 </div>
                 <div class="flex items-center gap-2">
+                    <button type="button" id="btnKpiPreviousDay" onclick="toggleKpiPreviousDay()" class="px-3 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 border border-indigo-500/40 text-white text-[10px] font-black">
+                        <i class="fa-solid fa-calendar-minus"></i> Previous Day
+                    </button>
                     <button type="button" onclick="renderCurrentDayKpiReport()" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-[10px] font-black">
                         <i class="fa-solid fa-rotate"></i> Refresh
                     </button>
@@ -1988,10 +1991,16 @@
         }
 
         /* ---- local cache ---- */
+        // Previous Ratio is kept separately from the live form so a browser
+        // refresh/reload can never erase a manually entered value.
+        let previousRatioOverrides = {};
+
         function saveLocalState() {
             try {
                 localStorage.setItem(LS_STATE_KEY, JSON.stringify({
-                    hubList, hubReportsData, hubReportHistory, attendanceReportsData, inventoryReportsData
+                    hubList, hubReportsData, hubReportHistory,
+                    previousRatioOverrides,
+                    attendanceReportsData, inventoryReportsData
                 }));
             } catch (e) {}
         }
@@ -2004,6 +2013,7 @@
                 if (Array.isArray(st.hubList)) hubList = st.hubList;
                 if (st.hubReportsData) hubReportsData = st.hubReportsData;
                 if (st.hubReportHistory) hubReportHistory = st.hubReportHistory;
+                if (st.previousRatioOverrides) previousRatioOverrides = st.previousRatioOverrides;
                 if (st.attendanceReportsData) attendanceReportsData = st.attendanceReportsData;
                 if (st.inventoryReportsData) inventoryReportsData = st.inventoryReportsData;
                 return true;
@@ -2057,7 +2067,8 @@
                     try {
                         await cloudDb.collection('hubReports').doc(hubId).set({
                             fields: hubReportsData[hubId] || {},
-                            history: hubReportHistory[hubId] || {}
+                            history: hubReportHistory[hubId] || {},
+                            previousRatioOverrides: previousRatioOverrides[hubId] || {}
                         });
                     } catch (e) { cloudFail(e); }
                     finally { pendingWrites.reports[hubId] = Math.max(0, (pendingWrites.reports[hubId] || 1) - 1); }
@@ -2644,7 +2655,11 @@
                 if (myAccess.isOwner && cloudDb.__firebase) {
                     if (await cloudDb.collection('hubReports').isEmpty()) {
                         for (const id of Object.keys(hubReportsData)) {
-                            await cloudDb.collection('hubReports').doc(id).set({ fields: hubReportsData[id] || {}, history: hubReportHistory[id] || {} });
+                            await cloudDb.collection('hubReports').doc(id).set({
+                                fields: hubReportsData[id] || {},
+                                history: hubReportHistory[id] || {},
+                                previousRatioOverrides: previousRatioOverrides[id] || {}
+                            });
                         }
                     }
                     if (await cloudDb.collection('attendanceReports').isEmpty()) {
@@ -2670,8 +2685,34 @@
                         delete hubReportsData[id]; delete hubReportHistory[id];
                     } else {
                         const d = ch.doc.data() || {};
-                        hubReportsData[id] = d.fields || {};
-                        hubReportHistory[id] = d.history || {};
+                        const localFields = hubReportsData[id] || {};
+                        const cloudFields = d.fields || {};
+
+                        // Do not let a stale/older Firestore snapshot erase a
+                        // locally cached Previous Ratio. Merge history by date
+                        // and prefer the newest snapshot when both exist.
+                        hubReportsData[id] = { ...localFields, ...cloudFields };
+
+                        const localHistory = hubReportHistory[id] || {};
+                        const cloudHistory = d.history || {};
+                        const mergedHistory = { ...localHistory };
+                        Object.keys(cloudHistory).forEach(dateKey => {
+                            const localEntry = mergedHistory[dateKey];
+                            const cloudEntry = cloudHistory[dateKey];
+                            if (!localEntry) {
+                                mergedHistory[dateKey] = cloudEntry;
+                                return;
+                            }
+                            const localTime = Date.parse(localEntry.savedAt || '') || 0;
+                            const cloudTime = Date.parse(cloudEntry?.savedAt || '') || 0;
+                            if (cloudTime >= localTime) mergedHistory[dateKey] = cloudEntry;
+                        });
+                        hubReportHistory[id] = mergedHistory;
+
+                        const localOverrides = previousRatioOverrides[id] || {};
+                        const cloudOverrides = d.previousRatioOverrides || {};
+                        previousRatioOverrides[id] = { ...localOverrides, ...cloudOverrides };
+
                         if (id === currentActiveHubId) touchedActive = true;
                     }
                 });
@@ -3566,6 +3607,18 @@
                 }
             });
 
+            // Keep Previous Ratio separately from the live form. This is the
+            // important part that prevents Ctrl+R from losing editable ratios.
+            const currentISO = parseReportDateToISO(reportData.m_reportDate);
+            if (currentISO) {
+                const bucket = getPreviousRatioOverrideBucket(currentActiveHubId, currentISO, true);
+                ['prevRatioInput1', 'prevRatioInput2', 'prevRatioInput3'].forEach((id, i) => {
+                    const key = ['delivered', 'fieldHold', 'fieldReturn'][i];
+                    const value = String(reportData[id] ?? '').trim();
+                    if (value && value !== '-') bucket[key] = value;
+                });
+            }
+
             hubReportsData[currentActiveHubId] = reportData;
             updateHubSummaryFromReport(currentActiveHubId, reportData);
             cloudSyncHubReport(currentActiveHubId);
@@ -3583,7 +3636,7 @@
                 resetReportFormToDefault();
             }
             calculateMorningFormulas();
-            syncPreviousDayRatios();
+            syncPreviousDayRatios({ preserveExisting: true });
             updateAllComparisons();
         }
 
@@ -4510,6 +4563,10 @@
         function openCurrentDayKpiReport() {
             const modal = document.getElementById('currentDayKpiReportModal');
             if (!modal) return;
+            kpiPreviousDayMode = false;
+            kpiReportTargetISO = getTodayISO();
+            const btn = document.getElementById('btnKpiPreviousDay');
+            if (btn) btn.innerHTML = '<i class="fa-solid fa-calendar-minus"></i> Previous Day';
             renderCurrentDayKpiReport();
             modal.classList.remove('hidden');
         }
@@ -4518,14 +4575,30 @@
             document.getElementById('currentDayKpiReportModal')?.classList.add('hidden');
         }
 
-        function getCurrentDayKpiRows() {
+        let kpiPreviousDayMode = false;
+        let kpiReportTargetISO = getTodayISO();
+
+        function getKpiHistoryFields(hubId, targetISO) {
+            const history = hubReportHistory?.[hubId] || {};
+            const entry = history[targetISO] || Object.values(history).find(e => e && e.date === targetISO);
+            if (entry && entry.reportData && Object.keys(entry.reportData).length) {
+                return { fields: entry.reportData, entry };
+            }
+            return { fields: null, entry: null };
+        }
+
+        function getCurrentDayKpiRows(targetISO = getTodayISO()) {
             const todayISO = getTodayISO();
             const todayDisplay = new Date().toLocaleDateString('en-GB', {day:'2-digit', month:'2-digit', year:'numeric'}).replaceAll('/', '-');
             return getVisibleHubs().map(hub => {
-                const fields = hubReportsData?.[hub.id] || {};
-                const rawDate = String(fields.m_reportDate || '').trim();
-                const reportISO = parseReportDateToISO(rawDate);
-                const isCurrent = reportISO === todayISO;
+                const liveFields = hubReportsData?.[hub.id] || {};
+                const liveRawDate = String(liveFields.m_reportDate || '').trim();
+                const liveReportISO = parseReportDateToISO(liveRawDate);
+                const historical = targetISO !== todayISO ? getKpiHistoryFields(hub.id, targetISO) : { fields: null, entry: null };
+                const fields = historical.fields || (liveReportISO === targetISO ? liveFields : {});
+                const rawDate = String(fields.m_reportDate || historical.entry?.reportDate || (liveReportISO === targetISO ? liveRawDate : '')).trim();
+                const reportISO = parseReportDateToISO(rawDate) || (historical.entry ? targetISO : null);
+                const isCurrent = reportISO === targetISO;
 
                 const n = id => {
                     const v = parseFloat(fields[id]);
@@ -4539,10 +4612,11 @@
                 const delivered = n('delivered');
                 const fieldHold = n('fieldHold');
                 const fieldReturn = n('fieldReturn');
-                const officeHold = n('officeHoldReason');
+                const morningOfficeHold = n('m_officeHold');
+                const closingOfficeHold = n('officeHoldReason');
                 const capShort = n('capShortage');
-                const totalHold = officeHold + capShort + fieldHold;
-                const onTheWay = Math.max(0, n('prevHold') + n('recParcel') - n('areaChange') - officeHold - capShort);
+                const totalHold = closingOfficeHold + capShort + fieldHold;
+                const onTheWay = Math.max(0, n('prevHold') + n('recParcel') - n('areaChange') - closingOfficeHold - capShort);
                 const collection = n('totalCollection');
 
                 return {
@@ -4552,11 +4626,13 @@
                     totalParcels, totalAssign,
                     assignRate: pct(totalAssign, totalParcels),
                     totalDA, presentDA, attendance: pct(presentDA, totalDA),
-                    officeHold: n('m_officeHold'), officeHoldPct: pct(n('m_officeHold'), totalParcels),
+                    officeHold: morningOfficeHold,
+                    officeHoldPct: pct(morningOfficeHold, totalParcels),
+                    closingOfficeHold,
                     delivered, deliveryPct: pct(delivered, onTheWay),
                     fieldHold, fieldHoldPct: pct(fieldHold, onTheWay),
                     fieldReturn, fieldReturnPct: pct(fieldReturn, onTheWay),
-                    officeHold, capShort, totalHold, collection, onTheWay,
+                    capShort, totalHold, collection, onTheWay,
                     status: isCurrent ? 'Current Day' : (rawDate ? 'Other Date' : 'No Report')
                 };
             });
@@ -4572,7 +4648,8 @@
             const dateEl = document.getElementById('currentDayKpiReportDate');
             if (!morningBody || !morningFoot || !closingBody || !closingFoot) return;
 
-            const rows = getCurrentDayKpiRows();
+            const targetISO = kpiReportTargetISO || getTodayISO();
+            const rows = getCurrentDayKpiRows(targetISO);
             const currentRows = rows.filter(r => r.isCurrent);
             const sum = key => currentRows.reduce((a, r) => a + (Number(r[key]) || 0), 0);
             const totalParcels = sum('totalParcels');
@@ -4597,7 +4674,7 @@
             };
             const elapsed = fields => {
                 const saved = String(fields.m_elapsedTime || '').trim();
-                if (saved && saved !== '0 Hours 0 Minutes') return saved;
+                if (saved) return saved;
                 const start = parseClockMinutes(fields.m_vanInTime);
                 const end = parseClockMinutes(fields.m_dispatchTime);
                 if (start === null || end === null) return '-';
@@ -4607,11 +4684,19 @@
             };
             const training = currentRows.reduce((a, r) => a + (Number(r.fields.m_onTrainingDA) || 0), 0);
             const officeHold = sum('officeHold');
+            const closingOfficeHold = sum('closingOfficeHold');
             const capShort = sum('capShort');
             const totalAttempt = currentRows.reduce((a, r) => a + (Number(r.fields.totalDelivered) || r.delivered + r.fieldHold + r.fieldReturn + r.officeHold + r.capShort), 0);
             const onWay = currentRows.reduce((a, r) => a + Math.max(0, r.onTheWay), 0);
 
-            if (dateEl) dateEl.textContent = new Date().toLocaleDateString('en-GB', {day:'2-digit', month:'long', year:'numeric'});
+            if (dateEl) {
+                const d = new Date(targetISO + 'T00:00:00');
+                dateEl.textContent = d.toLocaleDateString('en-GB', {day:'2-digit', month:'long', year:'numeric'});
+            }
+            const reportTitle = document.querySelector('#currentDayKpiReportModal h2');
+            if (reportTitle) reportTitle.innerHTML = `<i class="fa-solid fa-chart-pie text-emerald-400"></i> ALL HUB ${kpiPreviousDayMode ? 'PREVIOUS DAY' : 'CURRENT DAY'} KPI REPORT`;
+            const subTitle = document.querySelector('#currentDayKpiReportModal p');
+            if (subTitle) subTitle.innerHTML = `Separate Morning & Closing KPI for all hubs — <span id="currentDayKpiReportDate">${dateEl ? dateEl.textContent : '-'} </span>`;
             const card = (label, value, icon) => `<div class="bg-[#0b1329] border border-slate-800 rounded-xl p-3"><div class="text-[9px] font-black uppercase text-slate-500">${icon} ${label}</div><div class="text-base md:text-lg font-black text-white mt-1">${value}</div></div>`;
             if (morningCards) morningCards.innerHTML = [
                 card('Hubs', currentRows.length + ' / ' + rows.length, '🏢'),
@@ -4631,15 +4716,15 @@
             ].join('');
             const morningCount = document.getElementById('currentDayMorningCount');
             const closingCount = document.getElementById('currentDayClosingCount');
-            if (morningCount) morningCount.textContent = `${currentRows.length} current-day hubs`;
-            if (closingCount) closingCount.textContent = `${currentRows.length} current-day hubs`;
+            if (morningCount) morningCount.textContent = `${currentRows.length} / ${rows.length} ${kpiPreviousDayMode ? 'previous-day' : 'current-day'} hubs`;
+            if (closingCount) closingCount.textContent = `${currentRows.length} / ${rows.length} ${kpiPreviousDayMode ? 'previous-day' : 'current-day'} hubs`;
 
             morningBody.innerHTML = rows.map(r => {
                 const cur = r.isCurrent;
                 return `<tr class="hover:bg-slate-800/30 transition">
-                    <td class="p-2.5 font-black text-white sticky left-0 bg-[#131d36] z-[5]">${escapeHtml((String(r.hub.name || 'HUB').trim().replace(/\s+/g, ' ').replace(/Narsingdi-\s*Monohardi\s+Hub/i, 'Narsingdi-Monohardi')))}</td>
-                    <td class="p-2.5 text-center">${cur ? escapeHtml(r.vanIn) : '-'}</td>
-                    <td class="p-2.5 text-center">${cur ? escapeHtml(r.dispatch) : '-'}</td>
+                    <td class="p-2.5 font-black text-white sticky left-0 bg-[#131d36] z-[5]"><div class="flex items-center justify-between gap-2"><span>${escapeHtml(String(r.hub.name || 'HUB').trim().replace(/\s+/g, ' ').replace(/\s*Hub$/i, ''))}</span>${!cur ? '<span class=\"text-[8px] font-black text-amber-400 border border-amber-500/30 rounded px-1.5 py-0.5\">NO REPORT</span>' : ''}</div></td>
+                    <td class="p-2.5 text-center">${cur ? escapeHtml(r.vanIn) : '<span class=\"text-slate-500 font-bold\">NO REPORT</span>'}</td>
+                    <td class="p-2.5 text-center">${cur ? escapeHtml(r.dispatch) : '<span class=\"text-slate-500\">-</span>'}</td>
                     <td class="p-2.5 text-center">${cur ? escapeHtml(elapsed(r.fields)) : '-'}</td>
                     <td class="p-2.5 text-center font-bold">${cur ? r.totalParcels.toLocaleString() : '-'}</td>
                     <td class="p-2.5 text-center">${cur ? r.totalAssign.toLocaleString() : '-'}</td>
@@ -4652,12 +4737,12 @@
                 </tr>`;
             }).join('');
             const officeHoldRatio = totalParcels > 0 ? Math.round((officeHold / totalParcels) * 100) : 0;
-            morningFoot.innerHTML = `<tr><td class="p-3 sticky left-0 bg-[#0b1329] z-[5]">ALL CURRENT-DAY MORNING TOTAL</td><td colspan="3" class="p-3 text-center text-slate-400">${currentRows.length} hubs</td><td class="p-3 text-center">${totalParcels.toLocaleString()}</td><td class="p-3 text-center">${totalAssign.toLocaleString()}</td><td class="p-3 text-center">${assignRate}%</td><td class="p-3 text-center">${officeHold}</td><td class="p-3 text-center">${officeHoldRatio}%</td><td class="p-3 text-center">${totalDA}</td><td class="p-3 text-center">${presentDA}</td><td class="p-3 text-center">${attendance}%</td></tr>`;
+            morningFoot.innerHTML = `<tr><td class="p-3 sticky left-0 bg-[#0b1329] z-[5]">ALL ${kpiPreviousDayMode ? 'PREVIOUS-DAY' : 'CURRENT-DAY'} MORNING TOTAL</td><td colspan="3" class="p-3 text-center text-slate-400">${currentRows.length} hubs</td><td class="p-3 text-center">${totalParcels.toLocaleString()}</td><td class="p-3 text-center">${totalAssign.toLocaleString()}</td><td class="p-3 text-center">${assignRate}%</td><td class="p-3 text-center">${officeHold}</td><td class="p-3 text-center">${officeHoldRatio}%</td><td class="p-3 text-center">${totalDA}</td><td class="p-3 text-center">${presentDA}</td><td class="p-3 text-center">${attendance}%</td></tr>`;
 
             closingBody.innerHTML = rows.map(r => {
                 const cur = r.isCurrent;
                 return `<tr class="hover:bg-slate-800/30 transition">
-                    <td class="p-2.5 font-black text-white sticky left-0 bg-[#131d36] z-[5]">${escapeHtml((String(r.hub.name || 'HUB').trim().replace(/\s+/g, ' ').replace(/\s*HUB$/i, '') + ' Hub'))}</td>
+                    <td class="p-2.5 font-black text-white sticky left-0 bg-[#131d36] z-[5]"><div class="flex items-center justify-between gap-2"><span>${escapeHtml(String(r.hub.name || 'HUB').trim().replace(/\s+/g, ' ').replace(/\s*Hub$/i, ''))}</span>${!cur ? '<span class=\"text-[8px] font-black text-amber-400 border border-amber-500/30 rounded px-1.5 py-0.5\">NO REPORT</span>' : ''}</div></td>
                     <td class="p-2.5 text-center">${cur ? r.onTheWay.toLocaleString() : '-'}</td>
                     <td class="p-2.5 text-center font-bold text-emerald-300">${cur ? r.delivered.toLocaleString() : '-'}</td>
                     <td class="p-2.5 text-center">${cur ? r.deliveryPct : '-'}</td>
@@ -4665,12 +4750,28 @@
                     <td class="p-2.5 text-center">${cur ? r.fieldHoldPct : '-'}</td>
                     <td class="p-2.5 text-center">${cur ? r.fieldReturn.toLocaleString() : '-'}</td>
                     <td class="p-2.5 text-center">${cur ? r.fieldReturnPct : '-'}</td>
-                    <td class="p-2.5 text-center">${cur ? r.officeHold.toLocaleString() : '-'}</td>
+                    <td class="p-2.5 text-center">${cur ? r.closingOfficeHold.toLocaleString() : '-'}</td>
                     <td class="p-2.5 text-center text-rose-300">${cur ? r.totalHold.toLocaleString() : '-'}</td>
                     <td class="p-2.5 text-center">${cur ? r.collection.toLocaleString() : '-'}</td>
                 </tr>`;
             }).join('');
-            closingFoot.innerHTML = `<tr><td class="p-3 sticky left-0 bg-[#0b1329] z-[5]">ALL CURRENT-DAY CLOSING TOTAL</td><td class="p-3 text-center">${onWay.toLocaleString()}</td><td class="p-3 text-center text-emerald-300">${totalDelivered.toLocaleString()}</td><td class="p-3 text-center">${deliveryRate}%</td><td class="p-3 text-center text-amber-300">${totalFieldHold.toLocaleString()}</td><td class="p-3 text-center">-</td><td class="p-3 text-center">${totalFieldReturn.toLocaleString()}</td><td class="p-3 text-center">-</td><td class="p-3 text-center">${officeHold.toLocaleString()}</td><td class="p-3 text-center text-rose-300">${totalHold.toLocaleString()}</td><td class="p-3 text-center">${totalCollection.toLocaleString()}</td></tr>`;
+            closingFoot.innerHTML = `<tr><td class="p-3 sticky left-0 bg-[#0b1329] z-[5]">ALL ${kpiPreviousDayMode ? 'PREVIOUS-DAY' : 'CURRENT-DAY'} CLOSING TOTAL</td><td class="p-3 text-center">${onWay.toLocaleString()}</td><td class="p-3 text-center text-emerald-300">${totalDelivered.toLocaleString()}</td><td class="p-3 text-center">${deliveryRate}%</td><td class="p-3 text-center text-amber-300">${totalFieldHold.toLocaleString()}</td><td class="p-3 text-center">-</td><td class="p-3 text-center">${totalFieldReturn.toLocaleString()}</td><td class="p-3 text-center">-</td><td class="p-3 text-center">${closingOfficeHold.toLocaleString()}</td><td class="p-3 text-center text-rose-300">${totalHold.toLocaleString()}</td><td class="p-3 text-center">${totalCollection.toLocaleString()}</td></tr>`;
+        }
+
+        function toggleKpiPreviousDay() {
+            if (!kpiPreviousDayMode) {
+                const todayISO = getTodayISO();
+                const d = new Date(todayISO + 'T00:00:00');
+                d.setDate(d.getDate() - 1);
+                kpiReportTargetISO = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+                kpiPreviousDayMode = true;
+            } else {
+                kpiReportTargetISO = getTodayISO();
+                kpiPreviousDayMode = false;
+            }
+            const btn = document.getElementById('btnKpiPreviousDay');
+            if (btn) btn.innerHTML = kpiPreviousDayMode ? '<i class="fa-solid fa-calendar-day"></i> Current Day' : '<i class="fa-solid fa-calendar-minus"></i> Previous Day';
+            renderCurrentDayKpiReport();
         }
 
         function renderDashboard() {
@@ -5277,39 +5378,101 @@
             return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
         }
 
-        function syncPreviousDayRatios() {
-            const ids = ['prevRatioInput1', 'prevRatioInput2', 'prevRatioInput3'];
-            const clear = () => ids.forEach(id => {
-                const el = document.getElementById(id);
-                if (el) el.value = '-';
-            });
+        function getPreviousRatioOverrideBucket(hubId, reportISO, create = false) {
+            if (!hubId || !reportISO) return null;
+            if (!previousRatioOverrides[hubId] && create) previousRatioOverrides[hubId] = {};
+            if (!previousRatioOverrides[hubId]) return null;
+            if (!previousRatioOverrides[hubId][reportISO] && create) {
+                previousRatioOverrides[hubId][reportISO] = {};
+            }
+            return previousRatioOverrides[hubId][reportISO] || null;
+        }
 
-            if (!currentActiveHubId) { clear(); return; }
+        function getPreviousRatioValuesFromHistory(previous) {
+            if (!previous) return null;
+
+            // New format: exact Closing Report ratio snapshot.
+            if (previous.closingRatios) {
+                const r = previous.closingRatios;
+                return {
+                    delivered: String(r.delivered ?? '').trim(),
+                    fieldHold: String(r.fieldHold ?? '').trim(),
+                    fieldReturn: String(r.fieldReturn ?? '').trim()
+                };
+            }
+
+            // Backward compatibility: older saved reports may not have
+            // closingRatios, but their saved form still contains the computed
+            // percentage fields. Read those values instead of showing '-'.
+            const d = previous.reportData || {};
+            const pick = (id) => String(d[id] ?? '').trim();
+            if (pick('deliveredPct') || pick('fieldHoldPct') || pick('fieldReturnPct')) {
+                return {
+                    delivered: pick('deliveredPct'),
+                    fieldHold: pick('fieldHoldPct'),
+                    fieldReturn: pick('fieldReturnPct')
+                };
+            }
+
+            return null;
+        }
+
+        function syncPreviousDayRatios(options = {}) {
+            const preserveExisting = options.preserveExisting !== false;
+            const ids = ['prevRatioInput1', 'prevRatioInput2', 'prevRatioInput3'];
+            const currentValues = ids.map(id => {
+                const el = document.getElementById(id);
+                return el ? String(el.value || '').trim() : '';
+            });
+            const clearOnlyIfEmpty = () => {
+                ids.forEach((id, i) => {
+                    const el = document.getElementById(id);
+                    if (!el) return;
+                    if (!preserveExisting || !currentValues[i] || currentValues[i] === '-') el.value = '-';
+                });
+            };
+
+            if (!currentActiveHubId) { clearOnlyIfEmpty(); return; }
 
             const currentISO = parseReportDateToISO(document.getElementById('m_reportDate')?.value);
             const previousISO = getPreviousReportDateISO(currentISO);
-            if (!previousISO) { clear(); return; }
+            if (!previousISO) { clearOnlyIfEmpty(); return; }
 
             const history = hubReportHistory[currentActiveHubId] || {};
             let previous = history[previousISO];
 
-            // Defensive support for imported/older history where the date is stored
-            // inside the record instead of being the object key.
+            // Defensive support for imported/older history where the date is
+            // stored inside the record instead of being the object key.
             if (!previous) {
                 previous = Object.values(history).find(entry => String(entry?.date || '') === previousISO);
             }
 
-            // Only use a saved Closing Report snapshot containing the actual saved
-            // Ratio values. Do not derive a ratio from counts here.
-            const ratios = previous?.closingRatios;
-            if (!previous || !ratios) { clear(); return; }
+            let values = getPreviousRatioValuesFromHistory(previous);
 
-            const values = [ratios.delivered, ratios.fieldHold, ratios.fieldReturn];
+            // Manual Previous Ratio values for this exact report date have
+            // priority. This makes Ctrl+R/browser reload safe even if the
+            // shared cloud snapshot arrives a little later.
+            const override = getPreviousRatioOverrideBucket(currentActiveHubId, currentISO, false);
+            if (override) {
+                values = {
+                    delivered: String(override.delivered ?? '').trim() || values?.delivered || '',
+                    fieldHold: String(override.fieldHold ?? '').trim() || values?.fieldHold || '',
+                    fieldReturn: String(override.fieldReturn ?? '').trim() || values?.fieldReturn || ''
+                };
+            }
+
+            if (!values) {
+                clearOnlyIfEmpty();
+                return;
+            }
+
+            values = [values.delivered, values.fieldHold, values.fieldReturn];
             values.forEach((value, index) => {
                 const el = document.getElementById(ids[index]);
                 if (!el) return;
-                const text = String(value ?? '').trim();
-                el.value = text || '-';
+                const v = String(value ?? '').trim();
+                if (v) el.value = v;
+                else if (!preserveExisting || !currentValues[index] || currentValues[index] === '-') el.value = '-';
             });
         }
 
@@ -5656,7 +5819,7 @@
                     // that date's exact previous day. Other inputs must not
                     // overwrite a manually edited Previous Ratio.
                     if (el.id === 'm_reportDate') {
-                        syncPreviousDayRatios();
+                        syncPreviousDayRatios({ preserveExisting: true });
                         updateAllComparisons();
                     }
                     saveCurrentHubReportData();
@@ -5724,12 +5887,23 @@
             document.getElementById('btnRefresh')?.addEventListener('click', function() {
                 if (previousDayReportMode) { showToast('Click Current Day first'); return; }
                 saveState();
+                // Save the current Previous Ratio values first. Refresh must
+                // reset the working form, but it must NOT destroy these ratios.
+                const refreshRatioBackup = ['prevRatioInput1', 'prevRatioInput2', 'prevRatioInput3']
+                    .map(id => document.getElementById(id)?.value || '');
+
                 resetReportFormToDefault();
+
+                refreshRatioBackup.forEach((value, i) => {
+                    const el = document.getElementById(['prevRatioInput1', 'prevRatioInput2', 'prevRatioInput3'][i]);
+                    if (el && value && value !== '-') el.value = value;
+                });
+
                 calculateMorningFormulas();
                 // Refresh starts a fresh report day. After the report date is
                 // reset, immediately load the exact previous calendar day's
                 // saved Closing Report ratios into Previous Ratio.
-                syncPreviousDayRatios();
+                syncPreviousDayRatios({ preserveExisting: true });
                 updateAllComparisons();
                 saveCurrentHubReportData();
                 showToast('Report form refreshed. Previous Day Ratio loaded automatically.');
