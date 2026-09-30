@@ -2866,6 +2866,21 @@
             return /\bHUB\b$/i.test(name) ? name.toUpperCase() : `${name.toUpperCase()} HUB`;
         }
 
+        // Inventory Report uses normal title case instead of the all-caps Hub card/report title.
+        function formatInventoryHubDisplayName(hubName) {
+            const name = String(hubName || 'Hub').trim().replace(/\s+/g, ' ');
+            if (!name) return 'Hub';
+            const base = name.replace(/\s+HUB$/i, '').replace(/\s+Hub$/i, '').trim();
+            const title = base
+                .split(/([ -])/)
+                .map(part => {
+                    if (part === ' ' || part === '-') return part;
+                    return part ? part.charAt(0).toUpperCase() + part.slice(1).toLowerCase() : part;
+                })
+                .join('');
+            return `${title} Hub`;
+        }
+
         function generateReport(hubId, hubName) {
             if (!hasHubAccess(hubId)) { showToast('You do not have access to this hub'); return; }
             currentActiveHubId = hubId;
@@ -3439,8 +3454,9 @@
         function generateInventoryReport(hubId, hubName) {
             if (!hasHubAccess(hubId)) { showToast('You do not have access to this hub'); return; }
             currentActiveInventoryHubId=hubId;
-            document.getElementById('inventoryHubTitle').innerText=formatHubDisplayName(hubName);
-            document.getElementById('inventorySummaryTitle').innerText=`${formatHubDisplayName(hubName)} Inventory Report`;
+            const inventoryHubName = formatInventoryHubDisplayName(hubName);
+            document.getElementById('inventoryHubTitle').innerText=inventoryHubName;
+            document.getElementById('inventorySummaryTitle').innerText=`${inventoryHubName} Inventory Report`;
             document.getElementById('hubDashboardView').classList.add('hidden');
             document.getElementById('hubReportView').classList.add('hidden');
             document.getElementById('attendanceReportView').classList.add('hidden');
