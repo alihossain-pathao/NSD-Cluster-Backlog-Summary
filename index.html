@@ -4990,29 +4990,28 @@
                             const hasSummary = enabled.includes('summary');
                             const hasAttendance = enabled.includes('attendance');
                             let html = '';
+                            html += `<div class="grid grid-cols-2 gap-2">`;
                             if (hasReport || hasSummary) {
-                                html += `<div class="flex items-center gap-2">`;
                                 if (hasReport) {
-                                    html += `<button onclick="generateReport('${hub.id}', '${hub.name}')" class="flex-1 bg-gradient-to-b from-[#0ea5e9] to-[#0284c7] hover:from-[#38bdf8] hover:to-[#0369a1] text-white text-[11px] font-extrabold py-2.5 px-2.5 rounded-xl border border-sky-300/20 shadow-[0_4px_12px_rgba(2,132,199,0.28),inset_0_1px_0_rgba(255,255,255,0.14)] hover:shadow-[0_7px_18px_rgba(2,132,199,0.40)] hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 flex items-center justify-center gap-1.5">
+                                    html += `<button onclick="generateReport('${hub.id}', '${hub.name}')" class="h-[46px] w-full flex-1 bg-[#0284c7] hover:bg-[#0369a1] text-white text-xs font-bold py-2.5 px-3 rounded-xl shadow-md transition-all duration-200 flex items-center justify-center gap-2">
                                         <i class="fa-solid fa-file-lines text-sm"></i> Morning & Closing Report
                                     </button>`;
                                 }
                                 if (hasSummary) {
-                                    html += `<button onclick="openHubSummaryModal('${hub.id}', '${hub.name}')" class="flex-1 bg-gradient-to-b from-[#334155] to-[#1e293b] hover:from-[#475569] hover:to-[#273449] text-slate-100 text-[11px] font-extrabold py-2.5 px-2.5 rounded-xl border border-slate-500/40 shadow-[0_4px_12px_rgba(15,23,42,0.38),inset_0_1px_0_rgba(255,255,255,0.10)] hover:shadow-[0_7px_18px_rgba(15,23,42,0.52)] hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 flex items-center justify-center gap-1.5">
+                                    html += `<button onclick="openHubSummaryModal('${hub.id}', '${hub.name}')" class="h-[46px] w-full flex-1 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold py-2.5 px-3 rounded-xl border border-slate-700 transition-all duration-200 flex items-center justify-center gap-2">
                                         <i class="fa-solid fa-chart-line text-sm"></i> Summary
                                     </button>`;
                                 }
-                                html += `</div>`;
                             }
                             if (hasAttendance) {
-                                html += `<button onclick="generateAttendanceReport('${hub.id}', '${hub.name}')" class="w-full bg-gradient-to-b from-[#14b8a6] to-[#0d9488] hover:from-[#2dd4bf] hover:to-[#0f766e] text-white text-[11px] font-extrabold py-2.5 px-2.5 rounded-xl border border-teal-200/20 shadow-[0_4px_12px_rgba(13,148,136,0.28),inset_0_1px_0_rgba(255,255,255,0.14)] hover:shadow-[0_7px_18px_rgba(13,148,136,0.40)] hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 flex items-center justify-center gap-1.5">
+                                html += `<button onclick="generateAttendanceReport('${hub.id}', '${hub.name}')" class="h-[46px] w-full bg-[#0d9488] hover:bg-[#0f766e] text-white text-xs font-bold py-2.5 px-3 rounded-xl shadow-md transition-all duration-200 flex items-center justify-center gap-2">
                                     <i class="fa-solid fa-user-check text-sm"></i> D.A. Attendance Report
                                 </button>`;
                             }
-                            html += `<button onclick="generateInventoryReport('${hub.id}', '${hub.name}')" class="w-full bg-gradient-to-b from-[#d38bb0] to-[#c27ba0] hover:from-[#e0a0c0] hover:to-[#ad668b] text-white text-[11px] font-extrabold py-2.5 px-2.5 rounded-xl border border-pink-100/20 shadow-[0_4px_12px_rgba(194,123,160,0.28),inset_0_1px_0_rgba(255,255,255,0.14)] hover:shadow-[0_7px_18px_rgba(194,123,160,0.40)] hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 flex items-center justify-center gap-1.5">
+                            html += `<button onclick="generateInventoryReport('${hub.id}', '${hub.name}')" class="h-[46px] w-full bg-[#c27ba0] hover:bg-[#ad668b] text-white text-xs font-bold py-2.5 px-3 rounded-xl shadow-md transition-all duration-200 flex items-center justify-center gap-2">
                                 <i class="fa-solid fa-boxes-stacked text-sm"></i> Inventory Report
                             </button>`;
-                            html += `<button onclick="openAgentPerformanceReport('${hub.id}', '${hub.name}')" class="w-full bg-gradient-to-b from-[#8b5cf6] to-[#7c3aed] hover:from-[#a78bfa] hover:to-[#6d28d9] text-white text-[11px] font-extrabold py-2.5 px-2.5 rounded-xl border border-violet-200/20 shadow-[0_4px_12px_rgba(124,58,237,0.30),inset_0_1px_0_rgba(255,255,255,0.14)] hover:shadow-[0_7px_18px_rgba(124,58,237,0.45)] hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 flex items-center justify-center gap-1.5">
+                            html += `<button onclick="openAgentPerformanceReport('${hub.id}', '${hub.name}')" class="h-[46px] w-full bg-[#7c3aed] hover:bg-[#6d28d9] text-white text-xs font-bold py-2.5 px-3 rounded-xl shadow-md transition-all duration-200 flex items-center justify-center gap-2">
                                 <i class="fa-solid fa-user-chart text-sm"></i> Agent Performance Report
                             </button>`;
                             return html;
