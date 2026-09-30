@@ -3199,6 +3199,86 @@
         // Using stopImmediatePropagation prevents duplicate processing by multiple handlers.
         document.addEventListener('paste', handleInventoryPaste, true);
 
+        // ================================================================
+        // REPORT BULK MULTI-ROW PASTE
+        // Paste values copied as one value per line directly into the
+        // corresponding vertical report rows. Example: 17\n12\n5
+        // fills the selected row and the next rows in the same report field group.
+        // ================================================================
+        const REPORT_BULK_PASTE_GROUPS = [
+            // Morning: Received Parcel Ageing
+            ['m_age1','m_age2','m_age3','m_age4'],
+            // Morning: Dispatch Report
+            ['m_prevHold','m_reattemptReq','m_recParcel','m_areaChange'],
+            // Morning: Office Hold / Capacity Shortage
+            ['m_officeHold','m_capShort'],
+            // Morning: Hub In-Charge
+            ['m_totalHubIC','m_presentHubIC'],
+            // Closing: Delivery result rows
+            ['delivered','fieldHold','fieldReturn'],
+            // Closing: Backlog rows
+            ['totalIssue','totalSolved','totalPending','hubNotReceived'],
+            // Closing: IMS return/reverse columns
+            ['ims_issue_ret','ims_solved_ret','ims_pending_ret'],
+            ['ims_issue_rev','ims_solved_rev','ims_pending_rev'],
+            // Closing: Previous Day Ratio rows
+            ['prevRatioInput1','prevRatioInput2','prevRatioInput3']
+        ];
+
+        function getReportBulkGroupIndex(inputId) {
+            for (const group of REPORT_BULK_PASTE_GROUPS) {
+                const index = group.indexOf(inputId);
+                if (index !== -1) return { group, index };
+            }
+            return null;
+        }
+
+        function handleReportBulkPaste(event) {
+            const target = event.target;
+            if (!target || !target.matches('#hubReportView input')) return;
+            if (target.readOnly || target.disabled) return;
+
+            const clipboard = event.clipboardData || window.clipboardData;
+            const raw = clipboard ? (clipboard.getData('text/plain') || clipboard.getData('text') || '') : '';
+            if (!raw || !raw.trim()) return;
+
+            const lines = raw.replace(/\r\n/g, '\n').replace(/\r/g, '\n')
+                .split('\n').map(v => v.trim()).filter(v => v !== '');
+            if (lines.length < 2) return;
+
+            const info = getReportBulkGroupIndex(target.id);
+            if (!info) return;
+
+            event.preventDefault();
+            event.stopImmediatePropagation();
+
+            const { group, index } = info;
+            const values = lines.slice(0, group.length - index);
+            values.forEach((value, offset) => {
+                const el = document.getElementById(group[index + offset]);
+                if (!el) return;
+                // Keep numeric fields numeric; text fields (e.g. Previous Ratio) stay text.
+                if (el.type === 'number') {
+                    const cleaned = value.replace(/,/g, '').replace(/%/g, '').trim();
+                    el.value = cleaned;
+                } else {
+                    el.value = value;
+                }
+                el.dispatchEvent(new Event('input', { bubbles: true }));
+                el.dispatchEvent(new Event('change', { bubbles: true }));
+            });
+
+            // Recalculate all dependent report ratios/totals and persist the edited report.
+            try { calculateMorningFormulas(); } catch (e) {}
+            try { calculateClosingReport(); } catch (e) {}
+            try { updateAllComparisons(); } catch (e) {}
+            try { saveCurrentHubReportData(); } catch (e) {}
+            showToast(`${values.length} row${values.length === 1 ? '' : 's'} pasted successfully`);
+        }
+
+        document.addEventListener('paste', handleReportBulkPaste, true);
+
+
         function inventoryCellCount(value) {
             const v = String(value ?? '').trim();
             if (!v) return 0;
@@ -3619,9 +3699,6 @@
                 });
             }
 
-            const activeHub = hubList.find(h => h.id === currentActiveHubId);
-            reportData.__hubId = currentActiveHubId;
-            reportData.__hubName = activeHub?.name || '';
             hubReportsData[currentActiveHubId] = reportData;
             updateHubSummaryFromReport(currentActiveHubId, reportData);
             cloudSyncHubReport(currentActiveHubId);
@@ -4590,77 +4667,17 @@
             return { fields: null, entry: null };
         }
 
-        function getLatestKpiHistoryFields(hubId) {
-            const history = hubReportHistory?.[hubId] || {};
-            const entries = Object.values(history).filter(e => e && e.reportData && Object.keys(e.reportData).length);
-            entries.sort((a, b) => {
-                const ad = parseReportDateToISO(a.date || a.reportDate) || '';
-                const bd = parseReportDateToISO(b.date || b.reportDate) || '';
-                if (ad !== bd) return bd.localeCompare(ad);
-                return (Date.parse(b.savedAt || '') || 0) - (Date.parse(a.savedAt || '') || 0);
-            });
-            if (entries[0]) return { fields: entries[0].reportData, entry: entries[0], fallback: true };
-            return { fields: null, entry: null, fallback: false };
-        }
-
-        function normalizeKpiHubKey(value) {
-            return String(value || '').toLowerCase().replace(/[^a-z0-9]+/g, '');
-        }
-
-        function findKpiReportForHub(hub, targetISO) {
-            const todayISO = getTodayISO();
-            const exactLive = hubReportsData?.[hub.id] || {};
-            const exactHistory = targetISO !== todayISO ? getKpiHistoryFields(hub.id, targetISO) : { fields: null, entry: null };
-            if (exactHistory.fields) return { fields: exactHistory.fields, entry: exactHistory.entry };
-            if (Object.keys(exactLive).length) {
-                const iso = parseReportDateToISO(exactLive.m_reportDate);
-                if (iso === targetISO) return { fields: exactLive, entry: { reportDate: exactLive.m_reportDate, date: iso } };
-            }
-
-            // Compatibility: older versions could have stored report documents under
-            // a hub name/legacy key instead of the current hub ID. Match those records
-            // by normalized Hub ID or Hub Name so an existing report is not lost from KPI.
-            const keys = [hub.id, hub.name, String(hub.name || '').replace(/\s*hub$/i, '')]
-                .map(normalizeKpiHubKey).filter(Boolean);
-            for (const [key, fields] of Object.entries(hubReportsData || {})) {
-                const nk = normalizeKpiHubKey(key);
-                const metaKeys = [fields?.__hubId, fields?.__hubName]
-                    .map(normalizeKpiHubKey).filter(Boolean);
-                if ((!keys.includes(nk) && !metaKeys.some(k => keys.includes(k))) || !fields || !Object.keys(fields).length) continue;
-                return { fields, entry: { reportDate: fields.m_reportDate || '', date: parseReportDateToISO(fields.m_reportDate) } };
-            }
-
-            // Last fallback: use the latest history saved for this hub ID.
-            const latest = getLatestKpiHistoryFields(hub.id);
-            if (latest.fields) return { fields: latest.fields, entry: latest.entry };
-
-            return { fields: null, entry: null };
-        }
-
         function getCurrentDayKpiRows(targetISO = getTodayISO()) {
             const todayISO = getTodayISO();
             const todayDisplay = new Date().toLocaleDateString('en-GB', {day:'2-digit', month:'2-digit', year:'numeric'}).replaceAll('/', '-');
             return getVisibleHubs().map(hub => {
-                const found = findKpiReportForHub(hub, targetISO);
-                const liveFields = found.fields || {};
-                const liveRawDate = String(liveFields.m_reportDate || found.entry?.reportDate || '').trim();
+                const liveFields = hubReportsData?.[hub.id] || {};
+                const liveRawDate = String(liveFields.m_reportDate || '').trim();
                 const liveReportISO = parseReportDateToISO(liveRawDate);
-                // KPI must show a real saved report even when it was entered on the
-                // previous day. Only current-day rows are included in CURRENT totals.
-                let fields = liveFields;
-                let rawDate = liveRawDate;
-                let reportISO = liveReportISO;
-
-                // If a specific historical date was requested, prefer that exact entry.
-                if (targetISO !== todayISO) {
-                    const exact = getKpiHistoryFields(hub.id, targetISO);
-                    if (exact.fields) {
-                        fields = exact.fields;
-                        rawDate = String(exact.entry?.reportDate || fields.m_reportDate || '').trim();
-                        reportISO = parseReportDateToISO(rawDate) || targetISO;
-                    }
-                }
-
+                const historical = targetISO !== todayISO ? getKpiHistoryFields(hub.id, targetISO) : { fields: null, entry: null };
+                const fields = historical.fields || (liveReportISO === targetISO ? liveFields : {});
+                const rawDate = String(fields.m_reportDate || historical.entry?.reportDate || (liveReportISO === targetISO ? liveRawDate : '')).trim();
+                const reportISO = parseReportDateToISO(rawDate) || (historical.entry ? targetISO : null);
                 const isCurrent = reportISO === targetISO;
 
                 const n = id => {
@@ -4696,7 +4713,7 @@
                     fieldHold, fieldHoldPct: pct(fieldHold, onTheWay),
                     fieldReturn, fieldReturnPct: pct(fieldReturn, onTheWay),
                     capShort, totalHold, collection, onTheWay,
-                    status: isCurrent ? 'Current Day' : (rawDate ? 'Latest Saved Report' : 'No Report')
+                    status: isCurrent ? 'Current Day' : (rawDate ? 'Other Date' : 'No Report')
                 };
             });
         }
@@ -4762,7 +4779,7 @@
             if (subTitle) subTitle.innerHTML = `Separate Morning & Closing KPI for all hubs — <span id="currentDayKpiReportDate">${dateEl ? dateEl.textContent : '-'} </span>`;
             const card = (label, value, icon) => `<div class="bg-[#0b1329] border border-slate-800 rounded-xl p-3"><div class="text-[9px] font-black uppercase text-slate-500">${icon} ${label}</div><div class="text-base md:text-lg font-black text-white mt-1">${value}</div></div>`;
             if (morningCards) morningCards.innerHTML = [
-                card('Hubs', currentRows.length + ' current / ' + rows.length + ' shown', '🏢'),
+                card('Hubs', currentRows.length + ' / ' + rows.length, '🏢'),
                 card('Total Parcels', totalParcels.toLocaleString(), '📦'),
                 card('Assign Rate', assignRate + '%', '🚚'),
                 card('DA Attendance', attendance + '%', '👤'),
@@ -4770,7 +4787,7 @@
                 card('Office Hold', officeHold.toLocaleString(), '🏢')
             ].join('');
             if (closingCards) closingCards.innerHTML = [
-                card('Hubs', currentRows.length + ' current / ' + rows.length + ' shown', '🏢'),
+                card('Hubs', currentRows.length + ' / ' + rows.length, '🏢'),
                 card('Delivered', totalDelivered.toLocaleString(), '✅'),
                 card('Delivery Rate', deliveryRate + '%', '📈'),
                 card('Field Hold', totalFieldHold.toLocaleString(), '⏸'),
@@ -4779,25 +4796,24 @@
             ].join('');
             const morningCount = document.getElementById('currentDayMorningCount');
             const closingCount = document.getElementById('currentDayClosingCount');
-            if (morningCount) morningCount.textContent = `${currentRows.length} current / ${rows.length} shown hubs`;
-            if (closingCount) closingCount.textContent = `${currentRows.length} current / ${rows.length} shown hubs`;
+            if (morningCount) morningCount.textContent = `${currentRows.length} ${kpiPreviousDayMode ? 'previous-day' : 'current-day'} hubs`;
+            if (closingCount) closingCount.textContent = `${currentRows.length} ${kpiPreviousDayMode ? 'previous-day' : 'current-day'} hubs`;
 
             morningBody.innerHTML = rows.map(r => {
                 const cur = r.isCurrent;
-                const hasData = !!r.rawDate;
                 return `<tr class="hover:bg-slate-800/30 transition">
-                    <td class="p-2.5 font-black text-white sticky left-0 bg-[#131d36] z-[5]"><span>${escapeHtml(String(r.hub.name || 'HUB').trim().replace(/\s+/g, ' ').replace(/\s*Hub$/i, ''))}</span></td>
-                    <td class="p-2.5 text-center">${hasData ? escapeHtml(r.vanIn) : '<span class=\"text-slate-500 font-bold\">NO REPORT</span>'}</td>
-                    <td class="p-2.5 text-center">${hasData ? escapeHtml(r.dispatch) : '<span class=\"text-slate-500\">-</span>'}</td>
-                    <td class="p-2.5 text-center">${hasData ? escapeHtml(elapsed(r.fields)) : '-'}</td>
-                    <td class="p-2.5 text-center font-bold">${hasData ? r.totalParcels.toLocaleString() : '-'}</td>
-                    <td class="p-2.5 text-center">${hasData ? r.totalAssign.toLocaleString() : '-'}</td>
-                    <td class="p-2.5 text-center">${hasData ? r.assignRate : '-'}</td>
-                    <td class="p-2.5 text-center">${hasData ? r.officeHold.toLocaleString() : '-'}</td>
-                    <td class="p-2.5 text-center">${hasData ? r.officeHoldPct : '-'}</td>
-                    <td class="p-2.5 text-center">${hasData ? r.totalDA.toLocaleString() : '-'}</td>
-                    <td class="p-2.5 text-center">${hasData ? r.presentDA.toLocaleString() : '-'}</td>
-                    <td class="p-2.5 text-center">${hasData ? r.attendance : '-'}</td>
+                    <td class="p-2.5 font-black text-white sticky left-0 bg-[#131d36] z-[5]">${escapeHtml(String(r.hub.name || 'HUB').trim().replace(/\s+/g, ' ').replace(/\s*Hub$/i, ''))}</td>
+                    <td class="p-2.5 text-center">${cur ? escapeHtml(r.vanIn) : '-'}</td>
+                    <td class="p-2.5 text-center">${cur ? escapeHtml(r.dispatch) : '-'}</td>
+                    <td class="p-2.5 text-center">${cur ? escapeHtml(elapsed(r.fields)) : '-'}</td>
+                    <td class="p-2.5 text-center font-bold">${cur ? r.totalParcels.toLocaleString() : '-'}</td>
+                    <td class="p-2.5 text-center">${cur ? r.totalAssign.toLocaleString() : '-'}</td>
+                    <td class="p-2.5 text-center">${cur ? r.assignRate : '-'}</td>
+                    <td class="p-2.5 text-center">${cur ? r.officeHold.toLocaleString() : '-'}</td>
+                    <td class="p-2.5 text-center">${cur ? r.officeHoldPct : '-'}</td>
+                    <td class="p-2.5 text-center">${cur ? r.totalDA.toLocaleString() : '-'}</td>
+                    <td class="p-2.5 text-center">${cur ? r.presentDA.toLocaleString() : '-'}</td>
+                    <td class="p-2.5 text-center">${cur ? r.attendance : '-'}</td>
                 </tr>`;
             }).join('');
             const officeHoldRatio = totalParcels > 0 ? Math.round((officeHold / totalParcels) * 100) : 0;
@@ -4805,19 +4821,18 @@
 
             closingBody.innerHTML = rows.map(r => {
                 const cur = r.isCurrent;
-                const hasData = !!r.rawDate;
                 return `<tr class="hover:bg-slate-800/30 transition">
-                    <td class="p-2.5 font-black text-white sticky left-0 bg-[#131d36] z-[5]"><span>${escapeHtml(String(r.hub.name || 'HUB').trim().replace(/\s+/g, ' ').replace(/\s*Hub$/i, ''))}</span></td>
-                    <td class="p-2.5 text-center">${hasData ? r.onTheWay.toLocaleString() : '-'}</td>
-                    <td class="p-2.5 text-center font-bold text-emerald-300">${hasData ? r.delivered.toLocaleString() : '-'}</td>
-                    <td class="p-2.5 text-center">${hasData ? r.deliveryPct : '-'}</td>
-                    <td class="p-2.5 text-center text-amber-300">${hasData ? r.fieldHold.toLocaleString() : '-'}</td>
-                    <td class="p-2.5 text-center">${hasData ? r.fieldHoldPct : '-'}</td>
-                    <td class="p-2.5 text-center">${hasData ? r.fieldReturn.toLocaleString() : '-'}</td>
-                    <td class="p-2.5 text-center">${hasData ? r.fieldReturnPct : '-'}</td>
-                    <td class="p-2.5 text-center">${hasData ? r.closingOfficeHold.toLocaleString() : '-'}</td>
-                    <td class="p-2.5 text-center text-rose-300">${hasData ? r.totalHold.toLocaleString() : '-'}</td>
-                    <td class="p-2.5 text-center">${hasData ? r.collection.toLocaleString() : '-'}</td>
+                    <td class="p-2.5 font-black text-white sticky left-0 bg-[#131d36] z-[5]">${escapeHtml(String(r.hub.name || 'HUB').trim().replace(/\s+/g, ' ').replace(/\s*Hub$/i, ''))}</td>
+                    <td class="p-2.5 text-center">${cur ? r.onTheWay.toLocaleString() : '-'}</td>
+                    <td class="p-2.5 text-center font-bold text-emerald-300">${cur ? r.delivered.toLocaleString() : '-'}</td>
+                    <td class="p-2.5 text-center">${cur ? r.deliveryPct : '-'}</td>
+                    <td class="p-2.5 text-center text-amber-300">${cur ? r.fieldHold.toLocaleString() : '-'}</td>
+                    <td class="p-2.5 text-center">${cur ? r.fieldHoldPct : '-'}</td>
+                    <td class="p-2.5 text-center">${cur ? r.fieldReturn.toLocaleString() : '-'}</td>
+                    <td class="p-2.5 text-center">${cur ? r.fieldReturnPct : '-'}</td>
+                    <td class="p-2.5 text-center">${cur ? r.closingOfficeHold.toLocaleString() : '-'}</td>
+                    <td class="p-2.5 text-center text-rose-300">${cur ? r.totalHold.toLocaleString() : '-'}</td>
+                    <td class="p-2.5 text-center">${cur ? r.collection.toLocaleString() : '-'}</td>
                 </tr>`;
             }).join('');
             closingFoot.innerHTML = `<tr><td class="p-3 sticky left-0 bg-[#0b1329] z-[5]">ALL ${kpiPreviousDayMode ? 'PREVIOUS-DAY' : 'CURRENT-DAY'} CLOSING TOTAL</td><td class="p-3 text-center">${onWay.toLocaleString()}</td><td class="p-3 text-center text-emerald-300">${totalDelivered.toLocaleString()}</td><td class="p-3 text-center">${deliveryRate}%</td><td class="p-3 text-center text-amber-300">${totalFieldHold.toLocaleString()}</td><td class="p-3 text-center">-</td><td class="p-3 text-center">${totalFieldReturn.toLocaleString()}</td><td class="p-3 text-center">-</td><td class="p-3 text-center">${closingOfficeHold.toLocaleString()}</td><td class="p-3 text-center text-rose-300">${totalHold.toLocaleString()}</td><td class="p-3 text-center">${totalCollection.toLocaleString()}</td></tr>`;
