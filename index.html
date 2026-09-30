@@ -5016,7 +5016,7 @@
                         </div>
                     </div>
 
-                    <div class="pt-3 border-t border-slate-800/80 flex flex-col gap-1.5">
+                    <div class="pt-3 border-t border-slate-800/80">
                         ${(() => {
                             const enabled = hub.reports || ['report', 'summary', 'attendance'];
                             const hasReport = enabled.includes('report');
@@ -5047,6 +5047,7 @@
                             html += `<button onclick="openAgentPerformanceReport('${hub.id}', '${hub.name}')" class="h-[46px] w-full bg-[#7c3aed] hover:bg-[#6d28d9] text-white text-xs font-bold py-2.5 px-3 rounded-xl shadow-md transition-all duration-200 flex items-center justify-center gap-2">
                                 <i class="fa-solid fa-user-chart text-sm"></i> Agent Performance Report
                             </button>`;
+                            html += `</div>`;
                             return html;
                         })()}
                     </div>
