@@ -5074,7 +5074,7 @@
                     <button type="button" class="dashboard-back-btn" onclick="window.parent.closeAgentPerformanceReport()">← Back to Dashboard</button>
                 </div>`;
 
-            reportHtml = reportHtml.replace('<body>', '<body>' + backButton);
+            reportHtml = reportHtml.replace(/<body(\s[^>]*)?>/i, match => match + backButton);
 
             // Reuse one modal/iframe so no extra browser page or tab opens.
             let modal = document.getElementById('agentPerformancePageModal');
