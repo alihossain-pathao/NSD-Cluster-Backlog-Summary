@@ -73,6 +73,27 @@
         .ageing-table .count-link { color:#0563c1; font-weight:800; text-decoration:none; cursor:pointer; }
         .ageing-table .count-link:hover { text-decoration:underline; }
         .ageing-table .grand-total td { background:#e2f0d9; font-weight:900; }
+        /* ===== Ageing: mode bar + Custom Report builder ===== */
+        .ageing-modebar { max-width:1500px; margin:0 auto 12px; display:flex; gap:8px; flex-wrap:wrap; }
+        .ageing-mode-btn { border:1px solid #1f4e78; background:#fff; color:#1f4e78; border-radius:6px; padding:7px 14px; font-size:11px; font-weight:900; cursor:pointer; }
+        .ageing-mode-btn.active { background:#1f4e78; color:#fff; }
+        .ageing-builder { max-width:1500px; margin:0 auto 12px; background:#fff; border:1px solid #cbd5e1; border-radius:6px; padding:12px; display:grid; grid-template-columns:minmax(0,1.6fr) minmax(0,1fr); gap:14px; color:#111827; }
+        @media (max-width:900px) { .ageing-builder { grid-template-columns:1fr; } }
+        .ageing-bsec-title { font-size:11px; font-weight:900; color:#1f4e78; margin-bottom:6px; text-transform:uppercase; letter-spacing:.4px; }
+        .ageing-bsec { border:1px solid #e2e8f0; border-radius:6px; padding:9px; background:#f8fafc; margin-bottom:10px; }
+        .ageing-bsec:last-child { margin-bottom:0; }
+        .ageing-colrow { display:flex; align-items:center; gap:5px; margin-bottom:4px; }
+        .ageing-colrow .idx { width:18px; font-size:10px; font-weight:900; color:#64748b; text-align:center; }
+        .ageing-colrow .fname { flex:0 0 32%; font-size:10px; font-weight:800; color:#475569; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .ageing-colrow input[type=text] { flex:1; min-width:0; border:1px solid #cbd5e1; border-radius:5px; padding:4px 6px; font-size:11px; font-weight:700; background:#fff; color:#111827; }
+        .ageing-mini { border:1px solid #cbd5e1; background:#fff; color:#1f4e78; border-radius:5px; width:24px; height:24px; font-size:11px; font-weight:900; cursor:pointer; line-height:1; }
+        .ageing-mini:hover { background:#e0ecf7; }
+        .ageing-mini.del { color:#dc2626; }
+        .ageing-bsec select { border:1px solid #cbd5e1; border-radius:5px; padding:5px 6px; font-size:11px; font-weight:700; background:#fff; color:#111827; max-width:100%; }
+        .ageing-bsec select[multiple] { width:100%; margin-top:5px; }
+        .ageing-brow { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:6px; font-size:11px; font-weight:800; color:#334155; }
+        .ageing-brow label { display:inline-flex; align-items:center; gap:5px; cursor:pointer; }
+        .ageing-result-meta { max-width:1500px; margin:0 auto 6px; font-size:11px; font-weight:800; color:#475569; display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap; }
         .ageing-modal-backdrop {
             position:fixed; inset:0; z-index:300;
             background:rgba(2,8,23,.72);
@@ -175,7 +196,7 @@
             body.print-ageing-report #ageingReportView,
             body.print-ageing-report #ageingReportView * { visibility:visible !important; }
             body.print-ageing-report #ageingReportView { position:absolute; inset:0; padding:0 !important; background:#fff !important; }
-            body.print-ageing-report .ageing-report-toolbar { display:none !important; }
+            body.print-ageing-report .ageing-report-toolbar, body.print-ageing-report .ageing-modebar, body.print-ageing-report .ageing-builder, body.print-ageing-report .ageing-no-print { display:none !important; }
             body.print-ageing-report .ageing-card { border:none; max-width:none; }
         }
 
@@ -1489,6 +1510,11 @@ try {
 <button class="ageing-btn light" onclick="closeAgeingReportView()"><i class="fa-solid fa-arrow-left mr-1"></i> Dashboard</button>
 </div>
 </div>
+<div class="ageing-modebar hidden" id="ageingModeBar">
+<button class="ageing-mode-btn active" id="ageingModePivotBtn" onclick="ageingSetMode('pivot')" type="button"><i class="fa-solid fa-table-cells mr-1"></i> Pivot Table</button>
+<button class="ageing-mode-btn" id="ageingModeCustomBtn" onclick="ageingSetMode('custom')" type="button"><i class="fa-solid fa-table-list mr-1"></i> Custom Report</button>
+</div>
+<div class="hidden" id="ageingCustomContent"></div>
 <div id="ageingReportContent">
 <div class="ageing-card" style="margin-top:18px;">
 <div style="padding:45px 25px;text-align:center;">
@@ -7307,6 +7333,288 @@ try {
             document.getElementById('ageingConsignmentModal')?.classList.add('hidden');
         }
 
+        /* =================== AGEING: CUSTOM REPORT BUILDER =================== */
+        const AGEING_CFG_KEY = 'narsingdi_ageing_custom_cfg_v1';
+        let ageingMode = 'pivot';
+        let ageingFields = [];
+        let ageingCustom = { cols: [], filterField: '', filterVals: [], sortField: '', sortDir: 'asc', output: 'list', groupField: '' };
+        let ageingCustomOut = { head: [], body: [], note: '' };
+
+        function ageingBuildFields() {
+            const seen = new Set(), keys = [];
+            ageingRows.slice(0, 300).forEach(r => Object.keys(r).forEach(k => { if (!seen.has(k)) { seen.add(k); keys.push(k); } }));
+            ageingFields = keys.map(k => ({ key: k, label: k }));
+            ageingFields.push({ key: '__age', label: 'Age (Days)' });
+        }
+        function ageingFieldLabel(key) {
+            const f = ageingFields.find(x => x.key === key);
+            return f ? f.label : key;
+        }
+        function ageingFieldValue(row, key) {
+            if (key === '__age') {
+                const d = ageingParseDate(ageingSortedAt(row));
+                if (!d || !ageingReportDate) return '';
+                return Math.floor((ageingReportDate.getTime() - d.getTime()) / 86400000);
+            }
+            return row[key];
+        }
+        function ageingCellVal(v) {
+            if (typeof v === 'number') return v;
+            if (v instanceof Date && !isNaN(v.getTime())) {
+                const base = ageingDateText(new Date(v.getFullYear(), v.getMonth(), v.getDate()));
+                const hasTime = v.getHours() || v.getMinutes() || v.getSeconds();
+                return hasTime ? `${base} ${String(v.getHours()).padStart(2,'0')}:${String(v.getMinutes()).padStart(2,'0')}` : base;
+            }
+            return String(v ?? '');
+        }
+        function ageingCmp(a, b) {
+            if (a instanceof Date && b instanceof Date) return a.getTime() - b.getTime();
+            const na = Number(a), nb = Number(b);
+            if (a !== '' && b !== '' && !(a instanceof Date) && !(b instanceof Date) && !isNaN(na) && !isNaN(nb)) return na - nb;
+            return String(ageingCellVal(a)).localeCompare(String(ageingCellVal(b)), undefined, { numeric: true, sensitivity: 'base' });
+        }
+        function ageingFindKey(names) {
+            const wanted = names.map(ageingNormalizeKey);
+            const f = ageingFields.find(x => wanted.includes(ageingNormalizeKey(x.key)));
+            return f ? f.key : '';
+        }
+
+        function ageingCustomLoad() {
+            ageingBuildFields();
+            const valid = new Set(ageingFields.map(f => f.key));
+            let cfg = null;
+            try { cfg = JSON.parse(localStorage.getItem(AGEING_CFG_KEY) || 'null'); } catch (e) {}
+            const cols = (cfg && Array.isArray(cfg.cols) ? cfg.cols : []).filter(c => c && valid.has(c.key));
+            const hubKey = ageingFindKey(['DeliveryHub', 'Delivery Hub', 'Region_Hub', 'Region Hub', 'Hub']);
+            if (cols.length) {
+                ageingCustom = {
+                    cols: cols.map(c => ({ key: c.key, label: String(c.label || ageingFieldLabel(c.key)) })),
+                    filterField: valid.has(cfg.filterField) ? cfg.filterField : '',
+                    filterVals: [],
+                    sortField: valid.has(cfg.sortField) ? cfg.sortField : '',
+                    sortDir: cfg.sortDir === 'desc' ? 'desc' : 'asc',
+                    output: cfg.output === 'group' ? 'group' : 'list',
+                    groupField: valid.has(cfg.groupField) ? cfg.groupField : hubKey
+                };
+            } else {
+                const defKeys = [
+                    ageingFindKey(['ConsignmentId', 'Consignment ID']),
+                    hubKey,
+                    ageingFindKey(['SortedAt', 'Sorted At', 'SortDate']),
+                    '__age'
+                ].filter(Boolean);
+                ageingCustom = { cols: defKeys.map(k => ({ key: k, label: ageingFieldLabel(k) })), filterField: '', filterVals: [], sortField: '', sortDir: 'asc', output: 'list', groupField: hubKey };
+            }
+            if (!ageingCustom.groupField) ageingCustom.groupField = (ageingFields[0] || {}).key || '';
+        }
+        function ageingCustomSave() {
+            try {
+                localStorage.setItem(AGEING_CFG_KEY, JSON.stringify({
+                    cols: ageingCustom.cols, filterField: ageingCustom.filterField, sortField: ageingCustom.sortField,
+                    sortDir: ageingCustom.sortDir, output: ageingCustom.output, groupField: ageingCustom.groupField
+                }));
+            } catch (e) {}
+        }
+
+        function ageingInitModes() {
+            ageingCustomLoad();
+            document.getElementById('ageingModeBar')?.classList.remove('hidden');
+            ageingSetMode('pivot');
+        }
+
+        function ageingSetMode(mode) {
+            ageingMode = mode === 'custom' ? 'custom' : 'pivot';
+            document.getElementById('ageingReportContent')?.classList.toggle('hidden', ageingMode !== 'pivot');
+            document.getElementById('ageingCustomContent')?.classList.toggle('hidden', ageingMode !== 'custom');
+            document.getElementById('ageingModePivotBtn')?.classList.toggle('active', ageingMode === 'pivot');
+            document.getElementById('ageingModeCustomBtn')?.classList.toggle('active', ageingMode === 'custom');
+            if (ageingMode === 'custom') renderAgeingCustom();
+        }
+
+        function ageingUniqueValues(key) {
+            const set = new Set();
+            for (const r of ageingRows) { set.add(String(ageingCellVal(ageingFieldValue(r, key)))); if (set.size > 1000) break; }
+            return [...set].sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
+        }
+
+        function ageingCustomCompute() {
+            const c = ageingCustom;
+            let rows = ageingRows;
+            if (c.filterField && c.filterVals.length) {
+                const set = new Set(c.filterVals);
+                rows = rows.filter(r => set.has(String(ageingCellVal(ageingFieldValue(r, c.filterField)))));
+            }
+            if (c.output === 'group' && c.groupField) {
+                const map = new Map();
+                rows.forEach(r => {
+                    const k = String(ageingCellVal(ageingFieldValue(r, c.groupField)));
+                    map.set(k, (map.get(k) || 0) + 1);
+                });
+                const body = [...map.entries()]
+                    .sort((a, b) => a[0].localeCompare(b[0], undefined, { numeric: true, sensitivity: 'base' }))
+                    .map(([k, n]) => [k, n]);
+                body.push(['Grand Total', rows.length]);
+                return { head: [ageingFieldLabel(c.groupField), 'Count'], body, note: `${map.size} groups | ${rows.length} rows`, grand: true };
+            }
+            if (c.sortField) {
+                const dir = c.sortDir === 'desc' ? -1 : 1;
+                rows = rows.slice().sort((a, b) => ageingCmp(ageingFieldValue(a, c.sortField), ageingFieldValue(b, c.sortField)) * dir);
+            }
+            const body = rows.map(r => c.cols.map(col => ageingCellVal(ageingFieldValue(r, col.key))));
+            return { head: c.cols.map(col => col.label), body, note: `${rows.length} rows`, grand: false };
+        }
+
+        function renderAgeingCustom() {
+            const host = document.getElementById('ageingCustomContent');
+            if (!host) return;
+            const c = ageingCustom;
+            const fieldOpts = (sel, withBlank) => (withBlank ? `<option value="">— none —</option>` : '') +
+                ageingFields.map(f => `<option value="${ageingSafe(f.key)}" ${f.key === sel ? 'selected' : ''}>${ageingSafe(f.label)}</option>`).join('');
+            const unused = ageingFields.filter(f => !c.cols.some(col => col.key === f.key));
+
+            const colRows = c.cols.map((col, i) => `
+                <div class="ageing-colrow">
+                    <span class="idx">${i + 1}</span>
+                    <span class="fname" title="${ageingSafe(ageingFieldLabel(col.key))}">${ageingSafe(ageingFieldLabel(col.key))}</span>
+                    <input type="text" value="${ageingSafe(col.label)}" oninput="ageingCustomSetLabel(${i}, this.value)" title="Header name in the report">
+                    <button type="button" class="ageing-mini" onclick="ageingCustomMoveCol(${i}, -1)" title="Move up">↑</button>
+                    <button type="button" class="ageing-mini" onclick="ageingCustomMoveCol(${i}, 1)" title="Move down">↓</button>
+                    <button type="button" class="ageing-mini del" onclick="ageingCustomRemoveCol(${i})" title="Remove">✕</button>
+                </div>`).join('') || '<div style="font-size:11px;color:#94a3b8;font-weight:700;">No column selected.</div>';
+
+            let filterVals = '';
+            if (c.filterField) {
+                const vals = ageingUniqueValues(c.filterField);
+                filterVals = `<select multiple size="6" onchange="ageingCustomSetFilterVals(this)">` +
+                    vals.map(v => `<option value="${ageingSafe(v)}" ${c.filterVals.includes(v) ? 'selected' : ''}>${ageingSafe(v === '' ? '(blank)' : v)}</option>`).join('') +
+                    `</select><div style="font-size:10px;color:#64748b;font-weight:700;margin-top:3px;">Ctrl / Cmd + click দিয়ে একাধিক value select করুন। কিছু select না করলে সব row আসবে।</div>`;
+            }
+
+            host.innerHTML = `
+                <div class="ageing-builder">
+                    <div>
+                        <div class="ageing-bsec" style="${c.output === 'group' ? 'opacity:.45;' : ''}">
+                            <div class="ageing-bsec-title">Columns (order &amp; header name)</div>
+                            ${colRows}
+                            <div class="ageing-brow" style="margin-top:6px;">
+                                <select onchange="ageingCustomAddCol(this.value)">
+                                    <option value="">+ Add column…</option>
+                                    ${unused.map(f => `<option value="${ageingSafe(f.key)}">${ageingSafe(f.label)}</option>`).join('')}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="ageing-bsec">
+                            <div class="ageing-bsec-title">Output</div>
+                            <div class="ageing-brow">
+                                <label><input type="radio" name="ageingOut" ${c.output === 'list' ? 'checked' : ''} onchange="ageingCustomSetOutput('list')"> Detail list</label>
+                                <label><input type="radio" name="ageingOut" ${c.output === 'group' ? 'checked' : ''} onchange="ageingCustomSetOutput('group')"> Group count</label>
+                            </div>
+                            <div class="ageing-brow" style="${c.output === 'group' ? '' : 'display:none;'}">
+                                Group by <select onchange="ageingCustomSetGroup(this.value)">${fieldOpts(c.groupField, false)}</select>
+                            </div>
+                        </div>
+                        <div class="ageing-bsec">
+                            <div class="ageing-bsec-title">Filter</div>
+                            <select onchange="ageingCustomSetFilterField(this.value)">${fieldOpts(c.filterField, true)}</select>
+                            ${filterVals}
+                        </div>
+                        <div class="ageing-bsec" style="${c.output === 'group' ? 'opacity:.45;' : ''}">
+                            <div class="ageing-bsec-title">Sort</div>
+                            <div class="ageing-brow">
+                                <select onchange="ageingCustomSetSort(this.value)">${fieldOpts(c.sortField, true)}</select>
+                                <select onchange="ageingCustomSetSortDir(this.value)">
+                                    <option value="asc" ${c.sortDir === 'asc' ? 'selected' : ''}>A → Z / Small → Big</option>
+                                    <option value="desc" ${c.sortDir === 'desc' ? 'selected' : ''}>Z → A / Big → Small</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="ageing-result-meta">
+                    <span id="ageingCustomNote"></span>
+                    <span class="ageing-no-print" style="display:inline-flex;gap:7px;">
+                        <button type="button" class="ageing-mode-btn" onclick="ageingCustomCopy()"><i class="fa-solid fa-copy mr-1"></i> Copy Table</button>
+                        <button type="button" class="ageing-mode-btn" onclick="ageingCustomDownload()"><i class="fa-solid fa-file-excel mr-1"></i> Download Excel</button>
+                    </span>
+                </div>
+                <div class="ageing-card" id="ageingCustomResult"></div>`;
+            renderAgeingCustomResult();
+        }
+
+        function renderAgeingCustomResult() {
+            const out = ageingCustomOut = ageingCustomCompute();
+            const box = document.getElementById('ageingCustomResult');
+            const note = document.getElementById('ageingCustomNote');
+            if (!box) return;
+            const LIMIT = 5000;
+            const shown = out.body.slice(0, LIMIT);
+            if (note) note.textContent = out.note + (out.body.length > LIMIT ? ` | Showing first ${LIMIT} rows (Copy / Excel এ সব যাবে)` : '');
+            if (!out.head.length) { box.innerHTML = '<div style="padding:30px;text-align:center;color:#64748b;font-weight:800;">Add at least one column.</div>'; return; }
+            if (!out.body.length) { box.innerHTML = '<div style="padding:30px;text-align:center;color:#64748b;font-weight:800;">No data matches this format / filter.</div>'; return; }
+            const lastIdx = shown.length - 1;
+            box.innerHTML = `<table class="ageing-table">
+                <thead><tr>${out.head.map(h => `<th>${ageingSafe(h)}</th>`).join('')}</tr></thead>
+                <tbody>${shown.map((r, ri) => `<tr class="${out.grand && ri === lastIdx ? 'grand-total' : ''}">${r.map((v, ci) => `<td ${ci === 0 ? 'class="row-label"' : ''}>${ageingSafe(v)}</td>`).join('')}</tr>`).join('')}</tbody>
+            </table>`;
+        }
+
+        function ageingCustomChanged(rebuild) {
+            ageingCustomSave();
+            if (rebuild) renderAgeingCustom(); else renderAgeingCustomResult();
+        }
+        function ageingCustomAddCol(key) {
+            if (!key) return;
+            ageingCustom.cols.push({ key, label: ageingFieldLabel(key) });
+            ageingCustomChanged(true);
+        }
+        function ageingCustomRemoveCol(i) { ageingCustom.cols.splice(i, 1); ageingCustomChanged(true); }
+        function ageingCustomMoveCol(i, d) {
+            const j = i + d, cols = ageingCustom.cols;
+            if (j < 0 || j >= cols.length) return;
+            [cols[i], cols[j]] = [cols[j], cols[i]];
+            ageingCustomChanged(true);
+        }
+        function ageingCustomSetLabel(i, v) {
+            if (ageingCustom.cols[i]) ageingCustom.cols[i].label = v;
+            ageingCustomChanged(false);
+        }
+        function ageingCustomSetOutput(v) { ageingCustom.output = v; ageingCustomChanged(true); }
+        function ageingCustomSetGroup(v) { ageingCustom.groupField = v; ageingCustomChanged(false); }
+        function ageingCustomSetFilterField(v) { ageingCustom.filterField = v; ageingCustom.filterVals = []; ageingCustomChanged(true); }
+        function ageingCustomSetFilterVals(sel) {
+            ageingCustom.filterVals = [...sel.selectedOptions].map(o => o.value);
+            ageingCustomChanged(false);
+        }
+        function ageingCustomSetSort(v) { ageingCustom.sortField = v; ageingCustomChanged(false); }
+        function ageingCustomSetSortDir(v) { ageingCustom.sortDir = v; ageingCustomChanged(false); }
+
+        function ageingCustomCopy() {
+            const out = ageingCustomOut;
+            if (!out.body.length) return;
+            const text = [out.head, ...out.body].map(r => r.map(v => String(v).replace(/[\t\r\n]+/g, ' ')).join('\t')).join('\n');
+            const done = () => { try { showToast('Table copied — paste into Excel'); } catch (e) {} };
+            const fallback = () => {
+                const ta = document.createElement('textarea');
+                ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+                document.body.appendChild(ta); ta.select();
+                try { document.execCommand('copy'); done(); } catch (e) {}
+                document.body.removeChild(ta);
+            };
+            if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(text).then(done, fallback); else fallback();
+        }
+
+        function ageingCustomDownload() {
+            const out = ageingCustomOut;
+            if (!out.body.length) return;
+            if (typeof XLSX === 'undefined') { try { showToast('Excel library is not loaded'); } catch (e) {} return; }
+            const ws = XLSX.utils.aoa_to_sheet([out.head, ...out.body]);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Custom Report');
+            XLSX.writeFile(wb, `Ageing_Custom_Report_${ageingDateText(ageingReportDate || new Date())}.xlsx`);
+        }
+
         function openAgeingReportView() {
             document.getElementById('hubDashboardView')?.classList.add('hidden');
             document.getElementById('hubReportView')?.classList.add('hidden');
@@ -7411,6 +7719,7 @@ try {
 
                 openAgeingReportView();
                 renderAgeingReport();
+                ageingInitModes();
 
             } catch (err) {
                 console.error('Ageing import error:', err);
