@@ -393,6 +393,10 @@
         .inv-bulk-row .inv-bulk-cnt { color:#64748b; font-weight:800; margin-left:4px; }
         .inv-bulk-btn { border:0; cursor:pointer; background:#0284c7; color:#fff; font-size:10px; font-weight:900; padding:5px 10px; border-radius:6px; white-space:nowrap; }
         .inv-bulk-btn:hover { filter:brightness(1.1); }
+        .inv-bulk-row label { display:flex; align-items:center; gap:7px; cursor:pointer; flex:1; }
+        .inv-bulk-row input[type=checkbox] { width:14px; height:14px; accent-color:#dc2626; cursor:pointer; }
+        .inv-bulk-foot { padding:8px 10px; border-top:1px solid #e2e8f0; text-align:center; }
+        .inv-bulk-btn.danger { background:#dc2626; }
         .inv-bulk-btn:disabled { background:#cbd5e1; cursor:not-allowed; }
         .inventory-note { font:700 10px Arial,sans-serif; color:#64748b; text-align:center; margin-top:7px; }
         @media (max-width:1050px) { .inventory-main-grid { grid-template-columns:1fr; } .inventory-summary-wrap { width:423px; max-width:423px; } }
@@ -1636,9 +1640,9 @@ try {
 </div>
 <div class="inventory-note" data-html2canvas-ignore="true">Tip: Paste multiple rows directly into the table. Matching CID dates use the same highlight color.</div>
 <div class="inv-bulk-panel" data-html2canvas-ignore="true" id="invBulkPanel">
-<div class="inv-bulk-title"><i class="fa-solid fa-copy"></i> Bulk Copy (by CID Date)</div>
-<div class="inv-bulk-date"><span>Date</span><select id="invBulkDateSelect" onchange="invBulkDateChanged(this.value)"></select></div>
+<div class="inv-bulk-title"><i class="fa-solid fa-copy"></i> Bulk Copy / Clear Column</div>
 <div id="invBulkRows"></div>
+<div class="inv-bulk-foot"><button type="button" class="inv-bulk-btn danger" id="invBulkClearBtn" onclick="clearInventoryColumns()" disabled><i class="fa-solid fa-trash"></i> Clear Selected Columns</button></div>
 </div>
 </div>
 </div>
@@ -3982,23 +3986,17 @@ try {
             Object.entries(vals).forEach(([id,val])=>{ const el=document.getElementById(id); if(el) el.textContent=val; });
         }
 
-        /* =================== BULK COPY BY CID DATE =================== */
-        let invBulkSelectedDate = '__latest__';
+        /* =================== BULK COPY / CLEAR COLUMN =================== */
         const INV_BULK_COLS = [
-            {key:'cid', label:'CID from Hermes'},
-            {key:'assigned', label:'Assigned'},
-            {key:'officeHold', label:'Office Hold'},
-            {key:'areaChange', label:'Area Change'},
-            {key:'mismatch', label:'Mismatch/Missing'}
+            {key:'cid', label:'CID from Hermes', copy:true},
+            {key:'assigned', label:'Assigned', copy:true},
+            {key:'officeHold', label:'Office Hold', copy:true},
+            {key:'areaChange', label:'Area Change', copy:true},
+            {key:'mismatch', label:'Mismatch/Missing', copy:true},
+            {key:'status', label:'Status', copy:false},
+            {key:'remarks', label:'Remarks If Any', copy:false}
         ];
-
-        // CID format: 2 letters + DDMMYY + code (e.g. DH011026WYBYJB -> 011026)
-        function invBulkDateOf(cid) {
-            const m = String(cid || '').match(/^[A-Z]{2}(\d{6})/i);
-            return m ? m[1] : '';
-        }
-        function invBulkDateLabel(d) { return d ? `${d.slice(0,2)}-${d.slice(2,4)}-${d.slice(4,6)}` : ''; }
-        function invBulkDateSortKey(d) { return d.slice(4,6) + d.slice(2,4) + d.slice(0,2); }
+        const invBulkChecked = new Set();
 
         function invBulkValues(key) {
             const out = [];
@@ -4006,54 +4004,34 @@ try {
                 const raw = key === 'mismatch'
                     ? [row.mismatch, row.autoMismatch].filter(Boolean).join('\n')
                     : String(row[key] ?? '');
-                raw.split(/[\n\t,;]+/).map(v => normalizeInventoryCid(v)).filter(Boolean).forEach(v => {
-                    if (/^[A-Z]{2}\d{6}/.test(v)) out.push(v);
-                });
+                raw.split(/[\n\t,;]+/).map(v => v.trim()).filter(Boolean).forEach(v => out.push(v));
             });
             return out;
         }
 
-        function invBulkFilter(values, date) {
-            return date === '__all__' ? values : values.filter(v => invBulkDateOf(v) === date);
-        }
-
         function renderInventoryBulkCopy() {
-            const sel = document.getElementById('invBulkDateSelect');
             const rowsEl = document.getElementById('invBulkRows');
-            if (!sel || !rowsEl) return;
-
-            const data = {};
-            const dates = new Set();
-            INV_BULK_COLS.forEach(c => {
-                data[c.key] = invBulkValues(c.key);
-                data[c.key].forEach(v => dates.add(invBulkDateOf(v)));
-            });
-            const sorted = [...dates].sort((a,b) => invBulkDateSortKey(b).localeCompare(invBulkDateSortKey(a)));
-
-            let cur = invBulkSelectedDate;
-            if (cur === '__latest__') cur = sorted[0] || '__all__';
-            if (cur !== '__all__' && !dates.has(cur)) cur = sorted[0] || '__all__';
-
-            sel.innerHTML = '<option value="__all__">All dates</option>' +
-                sorted.map(d => `<option value="${d}">${invBulkDateLabel(d)}</option>`).join('');
-            sel.value = cur;
-
+            if (!rowsEl) return;
             rowsEl.innerHTML = INV_BULK_COLS.map(c => {
-                const n = invBulkFilter(data[c.key], cur).length;
-                return `<div class="inv-bulk-row"><span>${c.label}<span class="inv-bulk-cnt">(${n})</span></span>` +
-                    `<button type="button" class="inv-bulk-btn" ${n ? '' : 'disabled'} onclick="copyInventoryBulk('${c.key}')"><i class="fa-solid fa-copy"></i> Copy</button></div>`;
+                const n = invBulkValues(c.key).length;
+                const chk = invBulkChecked.has(c.key) ? 'checked' : '';
+                const btn = c.copy
+                    ? `<button type="button" class="inv-bulk-btn" ${n ? '' : 'disabled'} onclick="copyInventoryBulk('${c.key}')"><i class="fa-solid fa-copy"></i> Copy</button>`
+                    : '';
+                return `<div class="inv-bulk-row"><label><input type="checkbox" ${chk} onchange="toggleInvBulkColumn('${c.key}', this.checked)"><span>${c.label}<span class="inv-bulk-cnt">(${n})</span></span></label>${btn}</div>`;
             }).join('');
+            const clr = document.getElementById('invBulkClearBtn');
+            if (clr) clr.disabled = invBulkChecked.size === 0;
         }
 
-        function invBulkDateChanged(val) {
-            invBulkSelectedDate = val;
-            renderInventoryBulkCopy();
+        function toggleInvBulkColumn(key, on) {
+            if (on) invBulkChecked.add(key); else invBulkChecked.delete(key);
+            const clr = document.getElementById('invBulkClearBtn');
+            if (clr) clr.disabled = invBulkChecked.size === 0;
         }
 
         function copyInventoryBulk(key) {
-            const sel = document.getElementById('invBulkDateSelect');
-            const date = sel ? sel.value : '__all__';
-            const list = invBulkFilter(invBulkValues(key), date);
+            const list = invBulkValues(key);
             if (!list.length) return;
             const text = list.join('\n');
             const label = (INV_BULK_COLS.find(c => c.key === key) || {}).label || key;
@@ -4069,7 +4047,26 @@ try {
             else fallback();
         }
 
-        // Keep the Bulk Copy panel in sync every time the report recalculates.
+        function clearInventoryColumns() {
+            const keys = INV_BULK_COLS.filter(c => invBulkChecked.has(c.key));
+            if (!keys.length) return;
+            const names = keys.map(c => c.label).join(', ');
+            if (!confirm(`Clear all data in: ${names}?`)) return;
+            (currentInventoryRows || []).forEach(row => {
+                keys.forEach(c => {
+                    row[c.key] = '';
+                    if (c.key === 'mismatch') row.autoMismatch = '';
+                });
+            });
+            invBulkChecked.clear();
+            calculateInventoryReport();
+            renderInventoryRows();
+            updateInventoryDuplicateColors();
+            saveCurrentInventoryData();
+            try { showToast(`Cleared: ${names}`); } catch (e) {}
+        }
+
+        // Keep the panel in sync every time the report recalculates.
         (function () {
             const _calc = calculateInventoryReport;
             calculateInventoryReport = function () {
