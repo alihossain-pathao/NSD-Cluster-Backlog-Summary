@@ -4047,23 +4047,78 @@ try {
             else fallback();
         }
 
+        /* ---- Smart confirm modal (replaces the browser confirm box) ---- */
+        const invConfirmStyle = document.createElement('style');
+        invConfirmStyle.textContent = `
+            .inv-cf-back { position:fixed; inset:0; z-index:10000; display:flex; align-items:center; justify-content:center; padding:16px;
+                background:rgba(2,6,23,.62); backdrop-filter:blur(4px); opacity:0; transition:opacity .18s ease; }
+            .inv-cf-back.show { opacity:1; }
+            .inv-cf-card { width:100%; max-width:380px; background:linear-gradient(160deg,#131d36,#0b1329); color:#f8fafc; border:1px solid rgba(248,113,113,.35);
+                border-radius:18px; padding:22px 22px 18px; box-shadow:0 24px 60px -12px rgba(0,0,0,.7); transform:translateY(12px) scale(.96); transition:transform .2s cubic-bezier(.2,.8,.2,1); font-family:'Inter',system-ui,sans-serif; }
+            .inv-cf-back.show .inv-cf-card { transform:none; }
+            .inv-cf-ico { width:46px; height:46px; border-radius:999px; margin:0 auto 12px; display:flex; align-items:center; justify-content:center; font-size:18px; color:#fca5a5; background:rgba(239,68,68,.16); box-shadow:0 0 0 6px rgba(239,68,68,.08); }
+            .inv-cf-title { text-align:center; font-size:16px; font-weight:800; margin-bottom:4px; }
+            .inv-cf-sub { text-align:center; font-size:12px; color:#94a3b8; margin-bottom:14px; }
+            .inv-cf-list { display:flex; flex-wrap:wrap; gap:6px; justify-content:center; margin-bottom:16px; }
+            .inv-cf-chip { display:inline-flex; align-items:center; gap:6px; padding:5px 10px; border-radius:999px; font-size:11px; font-weight:700; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12); color:#e2e8f0; }
+            .inv-cf-chip b { background:#ef4444; color:#fff; border-radius:999px; padding:1px 7px; font-size:10px; font-weight:800; }
+            .inv-cf-actions { display:flex; gap:10px; }
+            .inv-cf-actions button { flex:1; border:0; cursor:pointer; padding:10px 12px; border-radius:12px; font-size:12px; font-weight:800; transition:transform .12s ease, filter .12s ease; }
+            .inv-cf-actions button:hover { transform:translateY(-1px); filter:brightness(1.1); }
+            .inv-cf-cancel { background:rgba(255,255,255,.08); color:#e2e8f0; }
+            .inv-cf-ok { background:linear-gradient(135deg,#ef4444,#dc2626); color:#fff; box-shadow:0 6px 16px -6px rgba(239,68,68,.7); }
+        `;
+        document.head.appendChild(invConfirmStyle);
+
+        function invSmartConfirm(chips, total, onOk) {
+            const back = document.createElement('div');
+            back.className = 'inv-cf-back';
+            back.innerHTML = `
+                <div class="inv-cf-card" role="dialog" aria-modal="true">
+                    <div class="inv-cf-ico"><i class="fa-solid fa-trash-can"></i></div>
+                    <div class="inv-cf-title">Clear selected columns?</div>
+                    <div class="inv-cf-sub">${total} ${total === 1 ? 'entry' : 'entries'} will be removed. This cannot be undone.</div>
+                    <div class="inv-cf-list">${chips.map(c => `<span class="inv-cf-chip">${escapeInventoryHtml(c.label)} <b>${c.n}</b></span>`).join('')}</div>
+                    <div class="inv-cf-actions">
+                        <button type="button" class="inv-cf-cancel">Cancel</button>
+                        <button type="button" class="inv-cf-ok"><i class="fa-solid fa-trash"></i> Clear</button>
+                    </div>
+                </div>`;
+            document.body.appendChild(back);
+            requestAnimationFrame(() => back.classList.add('show'));
+            const close = () => {
+                document.removeEventListener('keydown', onKey);
+                back.classList.remove('show');
+                setTimeout(() => back.remove(), 180);
+            };
+            const onKey = e => { if (e.key === 'Escape') close(); else if (e.key === 'Enter') { close(); onOk(); } };
+            document.addEventListener('keydown', onKey);
+            back.addEventListener('click', e => { if (e.target === back) close(); });
+            back.querySelector('.inv-cf-cancel').onclick = close;
+            back.querySelector('.inv-cf-ok').onclick = () => { close(); onOk(); };
+            back.querySelector('.inv-cf-cancel').focus();
+        }
+
         function clearInventoryColumns() {
             const keys = INV_BULK_COLS.filter(c => invBulkChecked.has(c.key));
             if (!keys.length) return;
+            const chips = keys.map(c => ({label: c.label, n: invBulkValues(c.key).length}));
+            const total = chips.reduce((n, c) => n + c.n, 0);
             const names = keys.map(c => c.label).join(', ');
-            if (!confirm(`Clear all data in: ${names}?`)) return;
-            (currentInventoryRows || []).forEach(row => {
-                keys.forEach(c => {
-                    row[c.key] = '';
-                    if (c.key === 'mismatch') row.autoMismatch = '';
+            invSmartConfirm(chips, total, () => {
+                (currentInventoryRows || []).forEach(row => {
+                    keys.forEach(c => {
+                        row[c.key] = '';
+                        if (c.key === 'mismatch') row.autoMismatch = '';
+                    });
                 });
+                invBulkChecked.clear();
+                calculateInventoryReport();
+                renderInventoryRows();
+                updateInventoryDuplicateColors();
+                saveCurrentInventoryData();
+                try { showToast(`Cleared: ${names}`); } catch (e) {}
             });
-            invBulkChecked.clear();
-            calculateInventoryReport();
-            renderInventoryRows();
-            updateInventoryDuplicateColors();
-            saveCurrentInventoryData();
-            try { showToast(`Cleared: ${names}`); } catch (e) {}
         }
 
         // Keep the panel in sync every time the report recalculates.
