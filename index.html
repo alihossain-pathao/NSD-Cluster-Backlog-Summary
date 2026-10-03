@@ -313,6 +313,11 @@
         .kpi-title { font-size: 9px; color: #475569; text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px; }
         .kpi-value { font-size: 15px; font-weight: 800; margin-top: 2px; color: #0f2942; }
 
+        /* Morning report: action buttons sit in their own bar outside the card */
+        .morning-report-col { flex:1; min-width:0; display:flex; flex-direction:column; gap:12px; }
+        .morning-report-col > .report-card { flex:none; }
+        .action-toolbar-detached { margin-top:0; padding:10px 14px; border-top:0; background:#fff; border:1px solid #94a3b8; border-radius:8px; box-shadow:0 4px 15px rgba(0,0,0,0.12); }
+        @media (max-width: 1200px) { .morning-report-col { width:100%; max-width:760px; } }
         .action-toolbar-bottom { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 14px; padding-top: 10px; border-top: 1.5px dashed #cbd5e1; }
         .btn-action { display: inline-flex; align-items: center; gap: 5px; padding: 6px 12px; font-size: 10.5px; font-weight: 700; border-radius: 6px; border: 1px solid transparent; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 2px 4px rgba(0,0,0,0.06); outline: none; }
         .btn-refresh { background-color: #ffffff; color: #0f172a; border-color: #94a3b8; }
@@ -1100,6 +1105,7 @@ try {
 <!-- COMBINED REPORT VIEW -->
 <div class="hidden report-body-bg min-h-screen" id="hubReportView">
 <div class="dashboard-wrapper pt-4" id="captureContainer">
+<div class="morning-report-col">
 <div class="report-card" id="morningReportCard">
 <div class="header-title">
 <h2 id="morningHeaderTitle">NARSINGDI HUB - MORNING DISPATCH REPORT</h2>
@@ -1233,7 +1239,8 @@ try {
 <div class="kpi-value" id="kpiDaAttendance">0%</div>
 </div>
 </div>
-<div class="action-toolbar-bottom" data-html2canvas-ignore="true">
+</div>
+<div class="action-toolbar-bottom action-toolbar-detached" data-html2canvas-ignore="true">
 <button class="btn-action btn-back-dashboard" onclick="closeReportView()" type="button">
 <i class="fa-solid fa-arrow-left"></i>
 <span>Back to Dashboard</span>
