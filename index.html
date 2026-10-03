@@ -309,6 +309,13 @@
         .diff-neutral { color: #d97706; font-weight: 800; font-size: 11px; }
 
         .kpi-container { display: flex; gap: 10px; margin-top: 12px; }
+        /* Highlight: Assign For Delivery row + Total Assigned KPI */
+        .c-teal-assign td { font-size:14px !important; font-weight:900 !important; padding-top:9px !important; padding-bottom:9px !important; letter-spacing:.3px; }
+        .c-teal-assign { box-shadow: inset 0 0 0 2px #7dd3fc; }
+        .c-teal-assign #m_totalAssign { font-size:18px !important; text-shadow:0 1px 2px rgba(0,0,0,.25); }
+        .kpi-card:has(#kpiTotalParcels) { background:linear-gradient(180deg,#e0f2fe,#ffffff); border:1px solid #0369a1; border-top:4px solid #0369a1; box-shadow:0 4px 12px rgba(3,105,161,.28); }
+        .kpi-card:has(#kpiTotalParcels) .kpi-title { color:#0369a1; }
+        .kpi-card:has(#kpiTotalParcels) .kpi-value { font-size:19px; color:#0369a1; }
         .kpi-card { flex: 1; background: #ffffff; border-radius: 6px; padding: 8px 10px; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.06); border: 1px solid #cbd5e1; border-top: 3px solid #0369a1; }
         .kpi-title { font-size: 9px; color: #475569; text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px; }
         .kpi-value { font-size: 15px; font-weight: 800; margin-top: 2px; color: #0f2942; }
@@ -1227,7 +1234,7 @@ try {
 </table>
 <div class="kpi-container">
 <div class="kpi-card">
-<div class="kpi-title">Total Parcels</div>
+<div class="kpi-title">Total Assigned</div>
 <div class="kpi-value" id="kpiTotalParcels">0</div>
 </div>
 <div class="kpi-card">
@@ -6564,8 +6571,7 @@ try {
             
             const totPar = Math.max(0, (pHold + rReq + rPar) - aCha);
             document.getElementById('m_totalParcels').innerText = totPar;
-            document.getElementById('kpiTotalParcels').innerText = totPar;
-            
+                        
             document.getElementById('m_totalParcelsPct').innerText = totPar > 0 ? '100%' : '0%';
 
             m_setCellPct('m_prevHoldPct', pHold, totPar);
@@ -6577,6 +6583,7 @@ try {
             const cSho = pVal('m_capShort');
             const totAssign = Math.max(0, totPar - (oHold + cSho));
             document.getElementById('m_totalAssign').innerText = totAssign;
+            document.getElementById('kpiTotalParcels').innerText = totAssign;
 
             m_setCellPct('m_officeHoldPct', oHold, totPar);
             m_setCellPct('m_capShortPct', cSho, totPar);
