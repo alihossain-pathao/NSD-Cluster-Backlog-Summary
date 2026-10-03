@@ -115,6 +115,11 @@
         .ageing-table td.ag-totcol { font-weight:900; background:#f1f5f9; }
         .ageing-table td.ag-num { font-variant-numeric:tabular-nums; }
         .ageing-card.ag-themed { box-shadow:0 2px 10px rgba(15,23,42,.08); border-radius:6px; }
+        /* Auto-fit columns: each column is only as wide as its content */
+        .ageing-card.ag-themed { width:fit-content; min-width:360px; max-width:100%; }
+        .ageing-card.ag-themed .ageing-table { width:auto; min-width:0; table-layout:auto; }
+        .ageing-card.ag-themed .ageing-table th, .ageing-card.ag-themed .ageing-table td { padding:5px 14px; }
+        .ageing-card.ag-themed .ageing-table .row-label { min-width:0; }
         .ag-presets { max-width:1500px; margin:0 auto 10px; display:flex; gap:7px; flex-wrap:wrap; align-items:center; font-size:10px; font-weight:900; color:#475569; }
         .ag-presets button { border:1px dashed #1f4e78; background:#f0f6fc; color:#1f4e78; border-radius:999px; padding:5px 12px; font-size:10px; font-weight:900; cursor:pointer; }
         .ag-presets button:hover { background:#1f4e78; color:#fff; }
