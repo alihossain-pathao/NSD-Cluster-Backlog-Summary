@@ -26,6 +26,35 @@
 
         .toast-notify { position: fixed; bottom: 20px; right: 20px; background-color: #0f2942; color: #ffffff; padding: 10px 18px; border-radius: 8px; font-size: 12px; font-weight: 700; box-shadow: 0 4px 15px rgba(0,0,0,0.3); z-index: 9999; opacity: 0; transform: translateY(10px); transition: all 0.3s ease; pointer-events: none; border: 1px solid #0284c7; }
         .toast-notify.show { opacity: 1; transform: translateY(0); }
+        /* Notice ticker: enters from the LEFT, runs to the RIGHT, then restarts from the left until the user clicks Read */
+        .notice-bar { position:relative; overflow:hidden; display:none; align-items:center; gap:14px; padding:10px 14px 10px 18px; border-radius:18px;
+            background: linear-gradient(110deg, rgba(124,58,237,.22) 0%, rgba(19,29,54,.92) 38%, rgba(19,29,54,.92) 100%);
+            border:1px solid rgba(167,139,250,.28); box-shadow: 0 8px 30px -12px rgba(124,58,237,.55), inset 0 1px 0 rgba(255,255,255,.06); backdrop-filter: blur(8px); }
+        .notice-bar.is-on { display:flex; animation: noticeBarIn .45s cubic-bezier(.2,.8,.2,1); }
+        .notice-bar::before { content:''; position:absolute; left:0; top:0; bottom:0; width:4px; background: linear-gradient(180deg,#a78bfa,#e879f9,#f59e0b); }
+        @keyframes noticeBarIn { from { opacity:0; transform: translateY(-8px); } to { opacity:1; transform:none; } }
+        .notice-badge { flex:0 0 auto; display:flex; align-items:center; gap:9px; padding:6px 12px 6px 8px; border-radius:999px; background: rgba(139,92,246,.18); border:1px solid rgba(167,139,250,.35); color:#ddd6fe; font-size:10px; font-weight:900; letter-spacing:.14em; text-transform:uppercase; }
+        .notice-bell { position:relative; width:26px; height:26px; border-radius:999px; display:flex; align-items:center; justify-content:center; background: linear-gradient(135deg,#8b5cf6,#d946ef); color:#fff; font-size:12px; }
+        .notice-bell::after { content:''; position:absolute; inset:0; border-radius:999px; border:2px solid rgba(167,139,250,.7); animation: noticePulse 1.8s ease-out infinite; }
+        @keyframes noticePulse { 0% { transform:scale(1); opacity:.9; } 100% { transform:scale(1.9); opacity:0; } }
+        .notice-count { min-width:20px; height:20px; padding:0 6px; border-radius:999px; background:#ef4444; color:#fff; font-size:10px; font-weight:900; letter-spacing:0; display:inline-flex; align-items:center; justify-content:center; box-shadow:0 0 0 3px rgba(239,68,68,.22); }
+        .notice-ticker-wrap { overflow:hidden; position:relative; flex:1 1 auto; min-width:0;
+            -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 36px, #000 calc(100% - 36px), transparent 100%);
+                    mask-image: linear-gradient(90deg, transparent 0, #000 36px, #000 calc(100% - 36px), transparent 100%); }
+        .notice-ticker-track { display:inline-flex; align-items:center; gap:28px; white-space:nowrap; width:max-content; padding:0; animation: noticeTickerMove 20s linear infinite; will-change: transform; }
+        .notice-ticker-wrap:hover .notice-ticker-track { animation-play-state: paused; }
+        @keyframes noticeTickerMove { 0% { transform: translateX(-100%); } 100% { transform: translateX(var(--tk-to, 100vw)); } }
+        .notice-item { display:inline-flex; align-items:center; gap:11px; padding:6px 7px 6px 8px; border-radius:999px; background: rgba(255,255,255,.045); border:1px solid rgba(255,255,255,.09); font-size:12px; }
+        .notice-item-ico { width:24px; height:24px; border-radius:999px; display:flex; align-items:center; justify-content:center; background: rgba(245,158,11,.16); color:#fbbf24; font-size:11px; }
+        .notice-item-title { color:#fff; font-weight:800; }
+        .notice-item-msg { color:#cbd5e1; font-weight:500; }
+        .notice-item-time { color:#64748b; font-size:10px; font-weight:700; }
+        .notice-read-btn { display:inline-flex; align-items:center; gap:6px; padding:5px 12px; border-radius:999px; border:0; cursor:pointer; color:#fff; font-size:10px; font-weight:900; letter-spacing:.04em;
+            background: linear-gradient(135deg,#10b981,#059669); box-shadow:0 4px 12px -4px rgba(16,185,129,.7); transition: transform .15s ease, filter .15s ease; }
+        .notice-read-btn:hover { transform: translateY(-1px) scale(1.04); filter:brightness(1.1); }
+        .notice-read-btn:active { transform: scale(.96); }
+        @media (max-width: 640px) { .notice-badge-text { display:none; } .notice-bar { padding:8px 10px 8px 14px; gap:10px; } }
+        @media (prefers-reduced-motion: reduce) { .notice-ticker-track { animation-duration: 60s; } .notice-bell::after { animation:none; } }
 
 
 
@@ -354,13 +383,24 @@
         .inventory-actions { display:flex; justify-content:center; align-items:center; gap:8px; flex-wrap:wrap; margin:12px auto 0; padding-top:10px; border-top:1px dashed #cbd5e1; }
         .inventory-action-btn { border:1px solid #94a3b8; background:#fff; color:#0f172a; border-radius:6px; padding:7px 12px; font:800 11px Arial,sans-serif; cursor:pointer; }
         .inventory-action-btn.primary { background:#0f2942; color:#fff; border-color:#0369a1; }
+        /* ===== Bulk Copy panel (separate from report table) ===== */
+        .inv-bulk-panel { margin-top:12px; border:1px solid #cbd5e1; border-radius:8px; background:#fff; overflow:hidden; font-family:Arial,sans-serif; }
+        .inv-bulk-panel .inv-bulk-title { background:#595959; color:#fff; font-weight:900; font-size:11px; padding:7px 10px; text-align:center; }
+        .inv-bulk-panel .inv-bulk-date { display:flex; align-items:center; gap:8px; padding:8px 10px; border-bottom:1px solid #e2e8f0; font-size:11px; font-weight:800; color:#334155; }
+        .inv-bulk-panel .inv-bulk-date select { flex:1; border:1px solid #cbd5e1; border-radius:6px; padding:4px 6px; font-size:11px; font-weight:700; color:#0f172a; background:#fff; }
+        .inv-bulk-row { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:6px 10px; border-bottom:1px solid #f1f5f9; font-size:11px; font-weight:700; color:#0f172a; }
+        .inv-bulk-row:last-child { border-bottom:0; }
+        .inv-bulk-row .inv-bulk-cnt { color:#64748b; font-weight:800; margin-left:4px; }
+        .inv-bulk-btn { border:0; cursor:pointer; background:#0284c7; color:#fff; font-size:10px; font-weight:900; padding:5px 10px; border-radius:6px; white-space:nowrap; }
+        .inv-bulk-btn:hover { filter:brightness(1.1); }
+        .inv-bulk-btn:disabled { background:#cbd5e1; cursor:not-allowed; }
         .inventory-note { font:700 10px Arial,sans-serif; color:#64748b; text-align:center; margin-top:7px; }
         @media (max-width:1050px) { .inventory-main-grid { grid-template-columns:1fr; } .inventory-summary-wrap { width:423px; max-width:423px; } }
         @media print {
             body.print-inventory-report * { visibility:hidden !important; }
             body.print-inventory-report #inventoryReportView, body.print-inventory-report #inventoryReportView * { visibility:visible !important; }
             body.print-inventory-report #inventoryReportView { position:absolute; inset:0; background:#fff !important; padding:0 !important; }
-            body.print-inventory-report .inventory-actions, body.print-inventory-report .inventory-note { display:none !important; }
+            body.print-inventory-report .inventory-actions, body.print-inventory-report .inventory-note, body.print-inventory-report .inv-bulk-panel { display:none !important; }
             body.print-inventory-report .inventory-main-grid { grid-template-columns:minmax(0,1fr) 385px; gap:18px; }
             body.print-inventory-report .inventory-table { min-width:0; }
         }
@@ -644,6 +684,11 @@ try {
 <input accept=".xlsx,.xls,.csv" class="hidden" id="excelReportInput" onchange="importExcelHubReport(event)" type="file"/>
 <input accept=".xlsx,.xls,.csv" class="hidden" id="ageingReportInput" onchange="importAgeingReport(event)" type="file"/>
 </div>
+<!-- NOTICE TICKER (unread notifications scroll until marked Read) -->
+<div class="notice-bar" id="dashboardNoticeTicker">
+<div class="notice-badge"><span class="notice-bell"><i class="fa-solid fa-bell"></i></span><span class="notice-badge-text">Notice</span></div>
+<div class="notice-ticker-wrap"><div class="notice-ticker-track" id="dashboardNoticeTickerTrack"></div></div>
+</div>
 <!-- TOP 4 QUICK ACTION CARDS -->
 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" data-hide-key="kpiCards">
 <div class="bg-[#131d36] border border-slate-800 rounded-xl p-5 flex items-center justify-between shadow-lg hover:-translate-y-1 hover:border-violet-800/60 transition-all duration-200 cursor-pointer" onclick="toggleDashboardNotificationPanel()" title="Open Notice">
@@ -651,10 +696,10 @@ try {
 <span class="text-xs uppercase font-bold text-slate-400 tracking-wider">NOTICE</span>
 <div class="text-3xl font-black text-violet-400 mt-1">Notice</div>
 <span class="text-xs font-semibold text-slate-400 flex items-center gap-1 mt-1">
-<i class="fa-solid fa-bell"></i> View Notifications
+<i class="fa-solid fa-bell"></i> <span id="dashboardNotificationSubText">View Notifications</span>
                     </span>
 </div>
-<div class="w-12 h-12 bg-violet-950/60 rounded-xl flex items-center justify-center text-violet-400 text-xl border border-violet-800/40">
+<div class="relative w-12 h-12 bg-violet-950/60 rounded-xl flex items-center justify-center text-violet-400 text-xl border border-violet-800/40">
 <i class="fa-solid fa-bell"></i>
 </div>
 </div>
@@ -1590,6 +1635,11 @@ try {
 <button class="inventory-action-btn" onclick="printInventoryReport()" type="button"><i class="fa-solid fa-print"></i> Print</button>
 </div>
 <div class="inventory-note" data-html2canvas-ignore="true">Tip: Paste multiple rows directly into the table. Matching CID dates use the same highlight color.</div>
+<div class="inv-bulk-panel" data-html2canvas-ignore="true" id="invBulkPanel">
+<div class="inv-bulk-title"><i class="fa-solid fa-copy"></i> Bulk Copy (by CID Date)</div>
+<div class="inv-bulk-date"><span>Date</span><select id="invBulkDateSelect" onchange="invBulkDateChanged(this.value)"></select></div>
+<div id="invBulkRows"></div>
+</div>
 </div>
 </div>
 </div>
@@ -1916,6 +1966,11 @@ try {
         let currentActiveAttendanceHubId = null;
         let currentAttendanceRows = [];
         let inventoryReportsData = {};
+        /* Agent Setup (EID + Name list) - one shared list PER HUB: Firestore agentSetups/{hubId} */
+        let agentSetupsData = {};
+        let agentSetupsLoaded = false;
+        const AGENT_SETUP_LS = 'narsingdi_agent_setups_v1';
+        try { agentSetupsData = JSON.parse(localStorage.getItem(AGENT_SETUP_LS)) || {}; } catch (e) { agentSetupsData = {}; }
         let currentActiveInventoryHubId = null;
         let currentInventoryRows = [];
 
@@ -2245,6 +2300,35 @@ try {
             saveLocalState();
             if (!cloudDb) return;
             queueSharedDocument('inventoryReports/' + hubId, { ...(inventoryReportsData[hubId] || {}) });
+        }
+
+        /* ---- Agent Setup: per-hub list, shared with every user via Firestore ---- */
+        function pendingAgentSetupWrite(id) { return sharedWriteLatest['agentSetups/' + id] !== undefined; }
+        function saveAgentSetupsLocal() {
+            try { localStorage.setItem(AGENT_SETUP_LS, JSON.stringify(agentSetupsData)); } catch (e) {}
+        }
+        function getHubAgentSetup(hubId) {
+            const e = agentSetupsData[hubId];
+            return (e && Array.isArray(e.list) && e.list.length) ? e.list : null;
+        }
+        function saveHubAgentSetup(hubId, list) {
+            if (!hubId) return Promise.resolve(false);
+            const clean = Array.isArray(list)
+                ? list.map(a => ({ eid: String(a.eid || '').trim(), name: String(a.name || '').trim() }))
+                : null;               // null = "reset to default" for everyone
+            agentSetupsData[hubId] = { list: clean };
+            saveAgentSetupsLocal();
+            if (!cloudDb) return Promise.resolve(false);
+            return queueSharedDocument('agentSetups/' + hubId, { list: clean });
+        }
+        function pushAgentSetupToOpenReport(hubId) {
+            try {
+                if (window.__agentReportHubId !== hubId) return;
+                const f = document.getElementById('agentPerformancePageFrame');
+                if (f && f.contentWindow && f.contentWindow.__applyAgentSetup) {
+                    f.contentWindow.__applyAgentSetup(getHubAgentSetup(hubId));
+                }
+            } catch (e) {}
         }
 
         const FIREBASE_CONFIG = {
@@ -2752,6 +2836,20 @@ try {
             const read = new Set(Array.isArray(dashboardNotificationReadIds) ? dashboardNotificationReadIds : []);
             return (Array.isArray(dashboardNotifications) ? dashboardNotifications : []).filter(n => n && !read.has(n.id));
         }
+        function fitNoticeTickerMotion(){
+            const track=document.getElementById('dashboardNoticeTickerTrack');
+            if(!track||!track.parentElement)return;
+            const c=track.parentElement.clientWidth, w=track.offsetWidth;
+            if(!c||!w)return;
+            // starts fully off the left edge, ends fully off the right edge (no blank wait)
+            const dur=Math.max(6,Math.round((w+c)/130))+'s';
+            if(track.dataset.tkC!==String(c)||track.dataset.tkW!==String(w)){
+                track.dataset.tkC=String(c);track.dataset.tkW=String(w);
+                track.style.setProperty('--tk-to',c+'px');
+                track.style.animationDuration=dur;
+            }
+        }
+        window.addEventListener('resize',fitNoticeTickerMotion);
         function renderDashboardNotificationTab() {
             const badge=document.getElementById('dashboardNotificationBadge');
             const list=document.getElementById('dashboardNotificationList');
@@ -2760,8 +2858,30 @@ try {
             // the notification list from rendering.
             if(!list)return;
             const unread=getDashboardNotificationUnread();
+            // Scrolling ticker on the dashboard: shows every unread notice moving
+            // right -> left, repeating until the user presses Read.
+            const ticker=document.getElementById('dashboardNoticeTicker');
+            const track=document.getElementById('dashboardNoticeTickerTrack');
+            if(ticker&&track){
+                const sig=unread.map(n=>String(n.id)+'|'+(n.title||'')+'|'+(n.message||'')).join('~~');
+                if(!unread.length){
+                    ticker.classList.remove('is-on');
+                    track.innerHTML='';track.dataset.sig='';
+                }else{
+                    ticker.classList.add('is-on');
+                    const cnt=document.getElementById('dashboardNoticeTickerCount');if(cnt)cnt.textContent=unread.length>99?'99+':String(unread.length);
+                    if(track.dataset.sig!==sig){ // rebuild only on change so the scroll doesn't restart
+                        track.dataset.sig=sig;
+                        track.innerHTML=unread.map(n=>`<span class="notice-item"><span class="notice-item-ico"><i class="fa-solid fa-bullhorn"></i></span><span class="notice-item-title">${escapeHtml(n.title||'Notice')}</span><span class="notice-item-msg">${escapeHtml(String(n.message||'').replace(/\s+/g,' '))}</span>${n.createdAt?`<span class="notice-item-time">${escapeHtml(new Date(n.createdAt).toLocaleString([],{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}))}</span>`:''}<button type="button" onclick="markDashboardNotificationRead('${escapeHtml(n.id)}')" class="notice-read-btn"><i class="fa-solid fa-check"></i> Read</button></span>`).join('');
+                        const chars=unread.reduce((a,n)=>a+String(n.title||'').length+String(n.message||'').length+10,0);
+                    }
+                    fitNoticeTickerMotion();
+                }
+            }
+            const sub=document.getElementById('dashboardNotificationSubText');
+            if(sub)sub.textContent=unread.length?(unread.length+' New Notification'+(unread.length>1?'s':'')):'View Notifications';
             if(badge){
-                badge.textContent=String(unread.length);
+                badge.textContent=unread.length>99?'99+':String(unread.length);
                 badge.classList.toggle('hidden',!unread.length);
                 badge.classList.toggle('flex',!!unread.length);
             }
@@ -3203,6 +3323,28 @@ try {
                 saveLocalState();
                 if (touched && !isEditingInside('inventoryReportView')) { try { loadInventoryData(currentActiveInventoryHubId); } catch (e) {} }
             }, err => { console.error('inventory listener failed', err); cloudFail(err); });
+
+            // 8) every hub's Agent Setup list (shared, live, separate per hub)
+            try {
+                const agentSnap = await cloudDb.collection('agentSetups').get();
+                agentSnap.docs.forEach(d => { agentSetupsData[d.id] = d.data() || {}; });
+                agentSetupsLoaded = true;
+                saveAgentSetupsLocal();
+            } catch (e) { console.warn('agentSetups load failed (check Firestore rules)', e); cloudFail(e); }
+            cloudDb.collection('agentSetups').onSnapshot(snap => {
+                const changed = [];
+                const seen = new Set();
+                snap.docs.forEach(doc => {
+                    seen.add(doc.id);
+                    const before = JSON.stringify((agentSetupsData[doc.id] || {}).list || null);
+                    agentSetupsData[doc.id] = doc.data() || {};
+                    if (before !== JSON.stringify(agentSetupsData[doc.id].list || null)) changed.push(doc.id);
+                });
+                Object.keys(agentSetupsData).forEach(id => { if (!seen.has(id) && !pendingAgentSetupWrite(id)) delete agentSetupsData[id]; });
+                agentSetupsLoaded = true;
+                saveAgentSetupsLocal();
+                changed.forEach(pushAgentSetupToOpenReport);
+            }, err => { console.error('agentSetups listener failed', err); cloudFail(err); });
 
             if (dashboardOwnerUid) {
                 cloudDb.doc('ownerSettings/' + dashboardOwnerUid).onSnapshot(snap => {
@@ -3839,6 +3981,103 @@ try {
             const vals={invTotalParcels:total,invAssignedParcels:assigned,invOfficeHoldParcels:officeHold,invAreaChangeParcels:areaChange,invMismatchParcels:mismatch,invMismatchSolved:solved,invMismatchPending:pending,invCountTotal:total,invCountAssigned:assigned,invCountOfficeHold:officeHold,invCountAreaChange:areaChange,invCountMismatch:mismatch,invCountStatus:statusCount,invCountRemarks:rows.filter(r => String(r.remarks || '').trim()).length};
             Object.entries(vals).forEach(([id,val])=>{ const el=document.getElementById(id); if(el) el.textContent=val; });
         }
+
+        /* =================== BULK COPY BY CID DATE =================== */
+        let invBulkSelectedDate = '__latest__';
+        const INV_BULK_COLS = [
+            {key:'cid', label:'CID from Hermes'},
+            {key:'assigned', label:'Assigned'},
+            {key:'officeHold', label:'Office Hold'},
+            {key:'areaChange', label:'Area Change'},
+            {key:'mismatch', label:'Mismatch/Missing'}
+        ];
+
+        // CID format: 2 letters + DDMMYY + code (e.g. DH011026WYBYJB -> 011026)
+        function invBulkDateOf(cid) {
+            const m = String(cid || '').match(/^[A-Z]{2}(\d{6})/i);
+            return m ? m[1] : '';
+        }
+        function invBulkDateLabel(d) { return d ? `${d.slice(0,2)}-${d.slice(2,4)}-${d.slice(4,6)}` : ''; }
+        function invBulkDateSortKey(d) { return d.slice(4,6) + d.slice(2,4) + d.slice(0,2); }
+
+        function invBulkValues(key) {
+            const out = [];
+            (currentInventoryRows || []).forEach(row => {
+                const raw = key === 'mismatch'
+                    ? [row.mismatch, row.autoMismatch].filter(Boolean).join('\n')
+                    : String(row[key] ?? '');
+                raw.split(/[\n\t,;]+/).map(v => normalizeInventoryCid(v)).filter(Boolean).forEach(v => {
+                    if (/^[A-Z]{2}\d{6}/.test(v)) out.push(v);
+                });
+            });
+            return out;
+        }
+
+        function invBulkFilter(values, date) {
+            return date === '__all__' ? values : values.filter(v => invBulkDateOf(v) === date);
+        }
+
+        function renderInventoryBulkCopy() {
+            const sel = document.getElementById('invBulkDateSelect');
+            const rowsEl = document.getElementById('invBulkRows');
+            if (!sel || !rowsEl) return;
+
+            const data = {};
+            const dates = new Set();
+            INV_BULK_COLS.forEach(c => {
+                data[c.key] = invBulkValues(c.key);
+                data[c.key].forEach(v => dates.add(invBulkDateOf(v)));
+            });
+            const sorted = [...dates].sort((a,b) => invBulkDateSortKey(b).localeCompare(invBulkDateSortKey(a)));
+
+            let cur = invBulkSelectedDate;
+            if (cur === '__latest__') cur = sorted[0] || '__all__';
+            if (cur !== '__all__' && !dates.has(cur)) cur = sorted[0] || '__all__';
+
+            sel.innerHTML = '<option value="__all__">All dates</option>' +
+                sorted.map(d => `<option value="${d}">${invBulkDateLabel(d)}</option>`).join('');
+            sel.value = cur;
+
+            rowsEl.innerHTML = INV_BULK_COLS.map(c => {
+                const n = invBulkFilter(data[c.key], cur).length;
+                return `<div class="inv-bulk-row"><span>${c.label}<span class="inv-bulk-cnt">(${n})</span></span>` +
+                    `<button type="button" class="inv-bulk-btn" ${n ? '' : 'disabled'} onclick="copyInventoryBulk('${c.key}')"><i class="fa-solid fa-copy"></i> Copy</button></div>`;
+            }).join('');
+        }
+
+        function invBulkDateChanged(val) {
+            invBulkSelectedDate = val;
+            renderInventoryBulkCopy();
+        }
+
+        function copyInventoryBulk(key) {
+            const sel = document.getElementById('invBulkDateSelect');
+            const date = sel ? sel.value : '__all__';
+            const list = invBulkFilter(invBulkValues(key), date);
+            if (!list.length) return;
+            const text = list.join('\n');
+            const label = (INV_BULK_COLS.find(c => c.key === key) || {}).label || key;
+            const done = () => { try { showToast(`${list.length} CID copied (${label})`); } catch (e) {} };
+            const fallback = () => {
+                const ta = document.createElement('textarea');
+                ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+                document.body.appendChild(ta); ta.select();
+                try { document.execCommand('copy'); done(); } catch (e) {}
+                document.body.removeChild(ta);
+            };
+            if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(text).then(done, fallback);
+            else fallback();
+        }
+
+        // Keep the Bulk Copy panel in sync every time the report recalculates.
+        (function () {
+            const _calc = calculateInventoryReport;
+            calculateInventoryReport = function () {
+                const r = _calc.apply(this, arguments);
+                try { renderInventoryBulkCopy(); } catch (e) { console.error(e); }
+                return r;
+            };
+        })();
 
         function saveCurrentInventoryData() {
             if (!currentActiveInventoryHubId) return;
@@ -5193,8 +5432,11 @@ try {
             const totalCollection = sum('collection');
             const assignRate = totalParcels > 0 ? Math.round(totalAssign / totalParcels * 100) : 0;
             const attendance = totalDA > 0 ? Math.round(presentDA / totalDA * 100) : 0;
-            const deliveryBase = currentRows.reduce((a, r) => a + r.delivered + r.fieldHold + r.fieldReturn, 0);
+            // Same base as every hub row and the Closing Report: On The Way parcels.
+            const deliveryBase = currentRows.reduce((a, r) => a + Math.max(0, r.onTheWay), 0);
             const deliveryRate = deliveryBase > 0 ? Math.round(totalDelivered / deliveryBase * 100) : 0;
+            const fieldHoldRate = deliveryBase > 0 ? Math.round(totalFieldHold / deliveryBase * 100) : 0;
+            const fieldReturnRate = deliveryBase > 0 ? Math.round(totalFieldReturn / deliveryBase * 100) : 0;
             const parseClockMinutes = value => {
                 const m = String(value || '').trim().match(/^(\d{1,2}):(\d{2})(?::\d{2})?\s*(AM|PM)?$/i);
                 if (!m) return null;
@@ -5294,7 +5536,7 @@ try {
                     <td class="p-2.5 text-center">${cur ? r.collection.toLocaleString() : '-'}</td>
                 </tr>`;
             }).join('');
-            closingFoot.innerHTML = `<tr><td class="p-3 sticky left-0 bg-[#0b1329] z-[5]">ALL ${kpiPreviousDayMode ? 'PREVIOUS-DAY' : 'CURRENT-DAY'} CLOSING TOTAL</td><td class="p-3 text-center">${onWay.toLocaleString()}</td><td class="p-3 text-center text-emerald-300">${totalDelivered.toLocaleString()}</td><td class="p-3 text-center">${deliveryRate}%</td><td class="p-3 text-center text-amber-300">${totalFieldHold.toLocaleString()}</td><td class="p-3 text-center">-</td><td class="p-3 text-center">${totalFieldReturn.toLocaleString()}</td><td class="p-3 text-center">-</td><td class="p-3 text-center">${closingOfficeHold.toLocaleString()}</td><td class="p-3 text-center text-rose-300">${totalHold.toLocaleString()}</td><td class="p-3 text-center">${totalCollection.toLocaleString()}</td></tr>`;
+            closingFoot.innerHTML = `<tr><td class="p-3 sticky left-0 bg-[#0b1329] z-[5]">ALL ${kpiPreviousDayMode ? 'PREVIOUS-DAY' : 'CURRENT-DAY'} CLOSING TOTAL</td><td class="p-3 text-center">${onWay.toLocaleString()}</td><td class="p-3 text-center text-emerald-300">${totalDelivered.toLocaleString()}</td><td class="p-3 text-center">${deliveryRate}%</td><td class="p-3 text-center text-amber-300">${totalFieldHold.toLocaleString()}</td><td class="p-3 text-center">${fieldHoldRate}%</td><td class="p-3 text-center">${totalFieldReturn.toLocaleString()}</td><td class="p-3 text-center">${fieldReturnRate}%</td><td class="p-3 text-center">${closingOfficeHold.toLocaleString()}</td><td class="p-3 text-center text-rose-300">${totalHold.toLocaleString()}</td><td class="p-3 text-center">${totalCollection.toLocaleString()}</td></tr>`;
         }
 
         function toggleKpiPreviousDay() {
@@ -5513,11 +5755,46 @@ try {
             const hubTitle = safeHubName.toUpperCase().replace(/\s+HUB$/i, '') + ' HUB AGENT PERFORMANCE REPORT';
             const hubKey = safeHubName.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '') || 'hub';
 
-            // Keep the existing Agent Performance Report design and make its data separate per hub.
+            // Keep the existing Agent Performance Report design. Agent Setup (EID + Name) is now
+            // stored PER HUB in the shared database (agentSetups/{hubId}) instead of this device only.
+            const legacyKey = hubKey + '_master_agents';   // old per-device key, used once for migration
+            if (agentSetupsLoaded && !agentSetupsData[hubId]) {
+                try {
+                    const legacy = JSON.parse(localStorage.getItem(legacyKey));
+                    if (Array.isArray(legacy) && legacy.length) saveHubAgentSetup(hubId, legacy);
+                } catch (e) {}
+            }
+            window.__agentReportHubId = hubId;
+
+            const must = (src, a, b) => { if (!src.includes(a)) console.warn('Agent report patch target not found:', a); return src.split(a).join(b); };
             reportHtml = reportHtml
                 .replace(/Shibpur Hub Agent Performance Report/g, hubTitle)
-                .replace(/SHIBPUR HUB AGENT PERFORMANCE REPORT/g, hubTitle)
-                .replace(/shibpur_master_agents/g, hubKey + '_master_agents');
+                .replace(/SHIBPUR HUB AGENT PERFORMANCE REPORT/g, hubTitle);
+            reportHtml = must(reportHtml,
+                "let masterList = JSON.parse(localStorage.getItem('shibpur_master_agents')) || defaultAgents;",
+                "const __HUB_ID = " + JSON.stringify(hubId) + ";\n" +
+                "        let masterList = (window.parent.getHubAgentSetup && window.parent.getHubAgentSetup(__HUB_ID)) || defaultAgents;");
+            reportHtml = must(reportHtml,
+                "localStorage.setItem('shibpur_master_agents', JSON.stringify(masterList));",
+                "if (window.parent.saveHubAgentSetup) window.parent.saveHubAgentSetup(__HUB_ID, masterList);");
+            reportHtml = must(reportHtml,
+                "localStorage.removeItem('shibpur_master_agents');",
+                "if (window.parent.saveHubAgentSetup) window.parent.saveHubAgentSetup(__HUB_ID, null);");
+            reportHtml = must(reportHtml,
+                "Monthly Agent List Successfully Saved!",
+                "Agent list saved for this hub (shared with everyone)!");
+            reportHtml = must(reportHtml,
+                "function openAgentModal() {",
+                "window.__applyAgentSetup = function (list) {\n" +
+                "            const next = list || defaultAgents;\n" +
+                "            const old = {}; agents.forEach(a => { old[a.eid + '|' + a.name] = a; });\n" +
+                "            masterList = next;\n" +
+                "            agents = masterList.map(a => ({ ...a, assign: 0, delivery: 0, hold: 0, returnCount: 0, ...(old[a.eid + '|' + a.name] ? { assign: old[a.eid + '|' + a.name].assign, delivery: old[a.eid + '|' + a.name].delivery, hold: old[a.eid + '|' + a.name].hold, returnCount: old[a.eid + '|' + a.name].returnCount } : {}) }));\n" +
+                "            renderTable();\n" +
+                "            const m = document.getElementById('agentModal');\n" +
+                "            if (m && m.classList.contains('hidden')) document.getElementById('agentSetupInput').value = masterList.map(a => a.eid + '\\t' + a.name).join('\\n');\n" +
+                "        };\n" +
+                "        function openAgentModal() {");
 
             // Reuse one modal/iframe so no extra browser page or tab opens.
             let modal = document.getElementById('agentPerformancePageModal');
@@ -5542,6 +5819,7 @@ try {
             const modal = document.getElementById('agentPerformancePageModal');
             const frame = document.getElementById('agentPerformancePageFrame');
             if (frame) frame.srcdoc = '';
+            window.__agentReportHubId = null;
             if (modal) modal.classList.add('hidden');
             document.body.style.overflow = '';
         }
@@ -5774,6 +6052,7 @@ try {
                 cleanup.push(cloudDb.collection('hubReports').doc(hubId).delete().catch(e => console.warn('hubReports cleanup failed', e)));
                 cleanup.push(cloudDb.collection('attendanceReports').doc(hubId).delete().catch(e => console.warn('attendanceReports cleanup failed', e)));
                 cleanup.push(cloudDb.collection('inventoryReports').doc(hubId).delete().catch(e => console.warn('inventoryReports cleanup failed', e)));
+                cleanup.push(cloudDb.collection('agentSetups').doc(hubId).delete().catch(e => console.warn('agentSetups cleanup failed', e)));
                 await Promise.all(cleanup);
 
                 hubList = hubList.filter(h => h.id !== hubId);
@@ -5781,6 +6060,8 @@ try {
                 delete hubReportHistory[hubId];
                 delete attendanceReportsData[hubId];
                 delete inventoryReportsData[hubId];
+                delete agentSetupsData[hubId];
+                saveAgentSetupsLocal();
                 saveLocalState();
                 filterHubs();
                 renderConsolidatedMatrix();
